@@ -1,0 +1,13 @@
+use_frameworks!
+
+platform :ios, '9.0'
+
+target 'CocoaDebug_Example' do
+  pod 'CocoaDebug', :path => '../'
+
+  target 'CocoaDebug_Tests' do
+    inherit! :search_paths
+
+    
+  end
+end
