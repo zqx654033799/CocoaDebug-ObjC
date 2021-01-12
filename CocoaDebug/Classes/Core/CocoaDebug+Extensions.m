@@ -106,14 +106,13 @@
 }
 @end
 
-static const NSString *kPMComputedProperty = @"PMComputedProperty";
 @implementation UIWindow (Extensions)
 
 - (BOOL)computedProperty {
-    return [objc_getAssociatedObject(self, &kPMComputedProperty) boolValue];
+    return [objc_getAssociatedObject(self, @selector(computedProperty)) boolValue];
 }
 - (void)setComputedProperty:(BOOL)value {
-    objc_setAssociatedObject(self, &kPMComputedProperty, @(value), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(self, @selector(computedProperty), @(value), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
 - (void)motionBegan:(UIEventSubtype)motion withEvent:(UIEvent *)event {
@@ -132,7 +131,7 @@ static const NSString *kPMComputedProperty = @"PMComputedProperty";
     [super motionEnded:motion withEvent:event];
 
     if ([self computedProperty]) {
-        [self setComputedProperty:YES];
+        [self setComputedProperty:NO];
         return;
     }
     

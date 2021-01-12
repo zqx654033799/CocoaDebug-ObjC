@@ -144,6 +144,10 @@ static NSString * const _CellReuseIdentifier = @"_NetworkDetailTableViewCellReus
 
 - (void)didTapMail:(id)sender {
     NSMutableString *messageBody = [NSMutableString string];
+    NSString *header = [NSString stringWithFormat:@"------- %@ -------\n%@", @"Request URL", self.httpModel.url.absoluteString];
+    if (header) {
+        [messageBody appendString:header];
+    }
     for (NetworkDetailModel *model in _detailModels) {
         NSString *string = nil;
         if (model.contentText.length > 0) {

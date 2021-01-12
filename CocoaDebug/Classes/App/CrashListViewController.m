@@ -11,6 +11,7 @@
 #import "NSObject+CocoaDebug.h"
 #import "_CrashStoreManager.h"
 #import "CrashDetailViewController.h"
+#import "CocoaDebugBackBarButtonItem.h"
 
 static NSString * const _CellReuseIdentifier = @"_CrashListTableViewCellReuseIdentifier";
 
@@ -39,7 +40,7 @@ static NSString * const _CellReuseIdentifier = @"_CrashListTableViewCellReuseIde
     self.title = @"Crash";
     self.view.backgroundColor = UIColor.blackColor;
     
-    self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"" style:UIBarButtonItemStylePlain target:nil action:nil];
+    self.navigationItem.backBarButtonItem = [CocoaDebugBackBarButtonItem backBarButtonItem];
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(tapTrashButton:)];
     
     self.tableView.separatorColor = [UIColor colorFromHexString:@"#4D4D4D"];

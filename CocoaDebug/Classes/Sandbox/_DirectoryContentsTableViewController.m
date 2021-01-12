@@ -17,6 +17,7 @@
 #import "_ImageController.h"
 #import "_SandboxerHelper.h"
 #import "NSObject+CocoaDebug.h"
+#import "CocoaDebugBackBarButtonItem.h"
 
 @interface _DirectoryContentsTableViewController () <QLPreviewControllerDataSource, UIViewControllerPreviewingDelegate, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate>
 
@@ -67,7 +68,7 @@ NSInteger const kMLBDeleteSelectedAlertViewTag = 121; // Toolbar Delete
     [self.view addGestureRecognizer:tap];
     
     //liman
-    self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"" style:UIBarButtonItemStylePlain target:nil action:nil];
+    self.navigationItem.backBarButtonItem = [CocoaDebugBackBarButtonItem backBarButtonItem];
     
     //liman
     if (_IsStringEmpty(self.title)) {

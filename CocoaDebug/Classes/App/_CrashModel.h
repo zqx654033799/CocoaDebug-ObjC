@@ -13,6 +13,7 @@
 @property (copy, nonatomic) NSDate *date;
 @property (copy, nonatomic) NSString *reason;
 @property (copy, nonatomic) NSString *name;
+@property (copy, nonatomic) NSString *version;
 @property (copy, nonatomic) NSArray *callStacks;
 
 - (instancetype)initWithName:(NSString *)name reason:(NSString *)reason;

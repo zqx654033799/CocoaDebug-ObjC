@@ -68,6 +68,7 @@ static NSString * const _CellReuseIdentifier = @"_CrashDetailTableViewCellReuseI
     self.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, DBL_EPSILON, DBL_EPSILON)];
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, DBL_EPSILON, DBL_EPSILON)];
     [self.tableView registerClass:CrashTableViewCell.class forCellReuseIdentifier:_CellReuseIdentifier];
+    self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeOnDrag;
     
     [self setupModels];
 }
@@ -77,7 +78,8 @@ static NSString * const _CellReuseIdentifier = @"_CrashDetailTableViewCellReuseI
     [self.crashModel.callStacks enumerateObjectsUsingBlock:^(NSString *obj, NSUInteger idx, BOOL *stop) {
         [contentStack appendFormat:obj.length>0?@"%@\n":@"%@", obj];
     }];
-    self.dataSource = @[@{@"Exception Name": self.crashModel.name?:@"N/A"},
+    self.dataSource = @[@{@"Crash App Version": self.crashModel.version?:@"N/A"},
+                        @{@"Exception Name": self.crashModel.name?:@"N/A"},
                         @{@"Exception Reason": self.crashModel.reason?:@"N/A"},
                         @{@"Exception Stack": contentStack}];
     
@@ -103,7 +105,7 @@ static NSString * const _CellReuseIdentifier = @"_CrashDetailTableViewCellReuseI
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     CrashDetailCell *cell = [tableView dequeueReusableCellWithIdentifier:_CellReuseIdentifier forIndexPath:indexPath];
-    if (indexPath.section == 2) {
+    if (indexPath.section == 3) {
         cell.textContent.font = [UIFont boldSystemFontOfSize:8];
         cell.contentView.backgroundColor = [UIColor colorFromHexString:@"#151515"];
     } else {

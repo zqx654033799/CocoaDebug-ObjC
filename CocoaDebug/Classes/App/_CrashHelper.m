@@ -7,7 +7,11 @@
 
 #import "_CrashHelper.h"
 #include <libkern/OSAtomic.h>
+#include <execinfo.h>
 #import "_CrashStoreManager.h"
+
+#include <sys/socket.h>
+
 
 static void exceptionHandler(NSException *exception)
 {
@@ -15,6 +19,7 @@ static void exceptionHandler(NSException *exception)
         return;
     }
     _CrashModel *model = [[_CrashModel alloc] initWithName:exception.name reason:exception.reason];
+    model.callStacks = exception.callStackSymbols;
     [_CrashStoreManager.shared addCrash:model];
 }
 
@@ -26,32 +31,40 @@ static void handleSignal(int signal)
     _CrashModel *model = nil;
     switch (signal) {
         case SIGILL:
-            model = [[_CrashModel alloc] initWithName:@"SIGILL" reason:nil];
+            model = [[_CrashModel alloc] initWithName:@"SIGILL" reason:@"signal"];
             break;
         case SIGABRT:
-            model = [[_CrashModel alloc] initWithName:@"SIGABRT" reason:nil];
+            model = [[_CrashModel alloc] initWithName:@"SIGABRT" reason:@"signal"];
             break;
         case SIGFPE:
-            model = [[_CrashModel alloc] initWithName:@"SIGFPE" reason:nil];
+            model = [[_CrashModel alloc] initWithName:@"SIGFPE" reason:@"signal"];
             break;
         case SIGBUS:
-            model = [[_CrashModel alloc] initWithName:@"SIGBUS" reason:nil];
+            model = [[_CrashModel alloc] initWithName:@"SIGBUS" reason:@"signal"];
             break;
         case SIGSEGV:
-            model = [[_CrashModel alloc] initWithName:@"SIGSEGV" reason:nil];
+            model = [[_CrashModel alloc] initWithName:@"SIGSEGV" reason:@"signal"];
             break;
         case SIGSYS:
-            model = [[_CrashModel alloc] initWithName:@"SIGSYS" reason:nil];
+            model = [[_CrashModel alloc] initWithName:@"SIGSYS" reason:@"signal"];
             break;
         case SIGPIPE:
-            model = [[_CrashModel alloc] initWithName:@"SIGPIPE" reason:nil];
+            model = [[_CrashModel alloc] initWithName:@"SIGPIPE" reason:@"signal"];
             break;
         case SIGTRAP:
-            model = [[_CrashModel alloc] initWithName:@"SIGTRAP" reason:nil];
+            model = [[_CrashModel alloc] initWithName:@"SIGTRAP" reason:@"signal"];
             break;
         default:
             return;
     }
+    void *callstack[128];
+    int frames = backtrace(callstack, 128);
+    char** strs = backtrace_symbols(callstack, frames);
+    NSMutableArray<NSString *> *callStacks = [NSMutableArray arrayWithCapacity:frames];
+    for (int i = 0; i < frames; i++) {
+        [callStacks addObject:[NSString stringWithUTF8String:strs[i]]];
+    }
+    model.callStacks = callStacks.copy;
     [_CrashStoreManager.shared addCrash:model];
 }
 

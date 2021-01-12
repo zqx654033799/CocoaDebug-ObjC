@@ -11,6 +11,7 @@
 #import "CocoaDebug+Extensions.h"
 #import "_HttpDatasource.h"
 #import "NetworkDetailViewController.h"
+#import "CocoaDebugBackBarButtonItem.h"
 
 static NSString * const _CellReuseIdentifier = @"_NetworkTableViewCellReuseIdentifier";
 
@@ -41,7 +42,7 @@ static NSString * const _CellReuseIdentifier = @"_NetworkTableViewCellReuseIdent
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor blackColor];
     
-    self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"" style:UIBarButtonItemStylePlain target:nil action:nil];
+    self.navigationItem.backBarButtonItem = [CocoaDebugBackBarButtonItem backBarButtonItem];
     self.navigationItem.rightBarButtonItems = @[[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(tapTrashButton:)],
     [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"_icon_file_type_down" inBundle:[NSBundle bundleForClass:self.class] compatibleWithTraitCollection:nil] style:UIBarButtonItemStylePlain target:self action:@selector(didTapDown:)]];
     
@@ -135,7 +136,7 @@ static NSString * const _CellReuseIdentifier = @"_NetworkTableViewCellReuseIdent
                  [defaultSearchModels addObject:obj];
              }
          }];
-         _httpModels = httpModels;
+         _httpModels = defaultSearchModels;
      }
      [self.tableView reloadData];
 }

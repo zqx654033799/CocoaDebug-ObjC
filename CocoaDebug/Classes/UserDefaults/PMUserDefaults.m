@@ -25,7 +25,7 @@
 }
 
 + (NSString *)_mapPath {
-    return [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Preferences/com.paperman.user.plist"];
+    return [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Preferences/com.paperman.cocoadebug.plist"];
 }
 
 - (instancetype)init

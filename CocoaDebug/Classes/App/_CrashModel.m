@@ -16,6 +16,9 @@
         _date = NSDate.date;
         _name = name;
         _reason = reason;
+        NSString *sv = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+        NSString *v = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
+        _version = [NSString stringWithFormat:@"v%@.%@", sv, v];
         _callStacks = NSThread.callStackSymbols;
     }
     return self;

@@ -21,10 +21,11 @@
     self.navigationBar.translucent = NO;
     
     self.navigationBar.tintColor = UIColor.mainGreen;
-    self.navigationBar.titleTextAttributes = @{NSFontAttributeName: [UIFont boldSystemFontOfSize:20],
-                                               NSForegroundColorAttributeName: self.navigationBar.tintColor};
-    
     self.navigationBar.barTintColor = [@"#1F2124" hexColor];
+    self.navigationBar.titleTextAttributes = @{NSFontAttributeName: [UIFont boldSystemFontOfSize:20],
+                                               NSForegroundColorAttributeName: UIColor.mainGreen};
+    [self.navigationBar setBackgroundImage:[UIImage new] forBarMetrics:UIBarMetricsDefault];
+    self.navigationBar.shadowImage = [UIImage new];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
