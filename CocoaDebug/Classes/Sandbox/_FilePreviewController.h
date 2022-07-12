@@ -12,6 +12,6 @@
 
 @interface _FilePreviewController : UIViewController
 
-@property (nonatomic, strong) _FileInfo *fileInfo;
+@property (nonatomic, weak) _FileInfo *fileInfo;
 
 @end

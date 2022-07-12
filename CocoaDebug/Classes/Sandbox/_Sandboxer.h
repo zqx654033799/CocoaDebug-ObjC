@@ -19,8 +19,6 @@
 
 @property (nonatomic, assign, getter=isExtensionHidden) BOOL extensionHidden; // Default is NO
 
-@property (nonatomic, assign, getter=isShareable) BOOL shareable; // Default is YES
-
 @property (nonatomic, assign, getter=isFileDeletable) BOOL fileDeletable; // Default is NO
 @property (nonatomic, assign, getter=isDirectoryDeletable) BOOL directoryDeletable; // Default is NO
 

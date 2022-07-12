@@ -11,7 +11,7 @@
 @interface CrashTableViewCell : UITableViewCell
 
 @property (weak, nonatomic, readonly) UILabel *labelTitle;
-@property (weak, nonatomic, readonly) UITextView *textContent;
+@property (weak, nonatomic, readonly) UILabel *textContent;
 
 @property (weak, nonatomic) _CrashModel *model;
 

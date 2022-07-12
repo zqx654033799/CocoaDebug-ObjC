@@ -9,14 +9,9 @@
 #import "_DirectoryContentsTableViewController.h"
 #import "_FilePreviewController.h"
 #import "_FileTableViewCell.h"
-#import "_ImageResources.h"
 #import "_Sandboxer.h"
 #import <QuickLook/QuickLook.h>
-#import "_Sandboxer-Header.h"
-#import "CocoaDebug+Extensions.h"
-#import "_ImageController.h"
 #import "_SandboxerHelper.h"
-#import "NSObject+CocoaDebug.h"
 #import "CocoaDebugBackBarButtonItem.h"
 
 @interface _DirectoryContentsTableViewController () <QLPreviewControllerDataSource, UIViewControllerPreviewingDelegate, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate>
@@ -147,6 +142,12 @@ NSInteger const kMLBDeleteSelectedAlertViewTag = 121; // Toolbar Delete
     self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
     [self.tableView registerClass:[_FileTableViewCell class] forCellReuseIdentifier:_FileTableViewCellReuseIdentifier];
     [self.view addSubview:self.tableView];
+#ifdef __IPHONE_15_0
+    if (@available(iOS 15.0, *)) {
+        // iOS15 导航栏和表格视图之间 的空隙
+        self.tableView.sectionHeaderTopPadding = 0.0f;
+    }
+#endif
     
     self.searchBar = [[UISearchBar alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 44)];
     self.searchBar.delegate = self;
@@ -155,11 +156,16 @@ NSInteger const kMLBDeleteSelectedAlertViewTag = 121; // Toolbar Delete
     [self.view addSubview:self.searchBar];
     
     //hide searchBar icon
-    UITextField *textFieldInsideSearchBar = [self.searchBar valueForKey:@"searchField"];
-    textFieldInsideSearchBar.leftViewMode = UITextFieldViewModeNever;
-    textFieldInsideSearchBar.leftView = nil;
-    textFieldInsideSearchBar.backgroundColor = [UIColor whiteColor];
-    textFieldInsideSearchBar.returnKeyType = UIReturnKeyDefault;
+    if (@available(iOS 13.0, *)) {
+        self.searchBar.searchTextField.backgroundColor = UIColor.whiteColor;
+        self.searchBar.searchTextField.leftViewMode = UITextFieldViewModeNever;
+        self.searchBar.searchTextField.leftView = nil;
+    } else {
+        UITextField *searchField = [self.searchBar valueForKey:@"_searchField"];
+        searchField.backgroundColor = UIColor.whiteColor;
+        searchField.leftViewMode = UITextFieldViewModeNever;
+        searchField.leftView = nil;
+    }
 }
 
 - (void)registerForPreviewing {
@@ -183,10 +189,8 @@ NSInteger const kMLBDeleteSelectedAlertViewTag = 121; // Toolbar Delete
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
         
         NSMutableArray<_FileInfo *> *dataSource_ = [_FileInfo contentsOfDirectoryAtURL:weakSelf.fileInfo.URL];
-        if ([dataSource_ count] > 0) {
-            weakSelf.dataSource = dataSource_;
-            weakSelf.dataSource_cache = dataSource_;
-        }
+        weakSelf.dataSource = dataSource_;
+        weakSelf.dataSource_cache = dataSource_;
         
         //主线程
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -211,7 +215,7 @@ NSInteger const kMLBDeleteSelectedAlertViewTag = 121; // Toolbar Delete
 //        directoryContentsTableViewController.hidesBottomBarWhenPushed = YES;//liman
         return directoryContentsTableViewController;
     } else {
-        if ([_Sandboxer shared].isShareable && fileInfo.isCanPreviewInQuickLook) {
+        if (fileInfo.isCanPreviewInQuickLook) {
             //NSLog(@"Quick Look can preview this file");
             self.previewingFileInfo = fileInfo;
             QLPreviewController *previewController = [[QLPreviewController alloc] init];
@@ -219,19 +223,6 @@ NSInteger const kMLBDeleteSelectedAlertViewTag = 121; // Toolbar Delete
             previewController.hidesBottomBarWhenPushed = YES;//liman
             return previewController;
         } else {
-            //liman
-            if (fileInfo.URL) {
-                NSData *data = [NSData dataWithContentsOfURL:fileInfo.URL];
-                if (data) {
-                    UIImage *image = [UIImage imageWithGIFData:data];
-                    if (image) {
-                        _ImageController *vc = [[_ImageController alloc] initWithImage:image fileInfo:fileInfo];
-                        vc.hidesBottomBarWhenPushed = YES;//liman
-                        return vc;
-                    }
-                }
-            }
-            
             //NSLog(@"Quick Look can not preview this file");
             _FilePreviewController *filePreviewController = [[_FilePreviewController alloc] init];
             filePreviewController.fileInfo = fileInfo;
@@ -472,7 +463,7 @@ NSInteger const kMLBDeleteSelectedAlertViewTag = 121; // Toolbar Delete
             [self.dataSource_search removeObject:self.deletingFileInfo];
         }
         
-        if (index >= 0) {
+        if (index != NSNotFound) {
             [self.tableView deleteRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:index inSection:0]] withRowAnimation:UITableViewRowAnimationFade];
         }
         
@@ -506,7 +497,7 @@ NSInteger const kMLBDeleteSelectedAlertViewTag = 121; // Toolbar Delete
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     _FileTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:_FileTableViewCellReuseIdentifier forIndexPath:indexPath];
     _FileInfo *fileInfo = [self fileInfoAtIndexPath:indexPath];
-    cell.imageView.image = [_ImageResources fileTypeImageNamed:fileInfo.typeImageName];
+    cell.imageView.image = [UIImage imageNamed:fileInfo.typeImageName inBundle:[NSBundle bundleForClass:self.class] compatibleWithTraitCollection:nil];
     cell.textLabel.text = [_Sandboxer shared].isExtensionHidden ? fileInfo.displayName.stringByDeletingPathExtension : fileInfo.displayName;
 //    cell.accessoryType = fileInfo.isDirectory ? UITableViewCellAccessoryDisclosureIndicator : UITableViewCellAccessoryNone;
     cell.accessoryType = UITableViewCellAccessoryNone; //liman
@@ -552,6 +543,13 @@ NSInteger const kMLBDeleteSelectedAlertViewTag = 121; // Toolbar Delete
 }
 
 #pragma mark - UITableViewDelegate
+- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
+    return 55;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
+    return 0.001f;
+}
 
 - (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
     return self.searchBar;

@@ -5,52 +5,66 @@
 //  Created by iPaperman on 2020/12/3.
 //
 
-#import "CocoaDebug+Extensions.h"
+#import "CocoaDebug.h"
+#import "_NetworkHelper.h"
+#import "_OCLogHelper.h"
+#import "_CrashHelper.h"
 
-///if the captured URLs contain server URL, CocoaDebug set server URL bold font to be marked. Not mark when this value is nil. Default value is `nil`.
-static NSString * _serverURL = nil;
-///set the URLs which should not been captured, CocoaDebug capture all URLs when the value is nil. Default value is `nil`.
-static NSArray * _ignoredURLs = nil;
-///set the URLs which are only been captured, CocoaDebug capture all URLs when the value is nil. Default value is `nil`.
-static NSArray * _onlyURLs = nil;
-///add an additional UIViewController as child controller of CocoaDebug's main UITabBarController. Default value is `nil`.
-static UIViewController * _additionalViewController = nil;
-///set the initial recipients to include in the email’s “To” field when share via email. Default value is `nil`.
-static NSArray * _emailToRecipients = nil;
-///set the initial recipients to include in the email’s “Cc” field when share via email. Default value is `nil`.
-static NSArray * _emailCcRecipients = nil;
-///set CocoaDebug's main color with hexadecimal format. Default value is `#42d459`.
-static NSString * _mainColor = @"#42d459";
-///protobuf url and response class transfer map. Default value is `nil`.
-static NSDictionary<NSString *,NSArray<NSString *> *> * _protobufTransferMap = nil;
+static BOOL debugDidFinishLaunching = NO;
 
 @implementation CocoaDebug
-
-+ (NSInteger)logMaxCount {
-    return 1000;
-}
-
-+ (NSString *)mainColor {
-    return _mainColor;
-}
 
 #pragma mark - CocoaDebug enable
 + (void)enable;
 {
-    [self initializationServerURL:_serverURL
-                      ignoredURLs:_ignoredURLs
-                         onlyURLs:_onlyURLs
-         additionalViewController:_additionalViewController
-                emailToRecipients:_emailToRecipients
-                emailCcRecipients:_emailCcRecipients
-                        mainColor:_mainColor
-              protobufTransferMap:_protobufTransferMap];
+    if (debugDidFinishLaunching) {
+        return;
+    }
+    debugDidFinishLaunching = YES;
+
+    CocoaDebugSettings.shared.visible = NO;
+    CocoaDebugSettings.shared.responseShake = YES;
+    CocoaDebugSettings.shared.showBubbleAndWindow = YES;
+    
+    //slow animations
+    CocoaDebugSettings.shared.slowAnimations = NO;
+    
+    //log
+    if (CocoaDebugSettings.shared.disableLogMonitoring) {
+        _OCLogHelper.shared.enable = NO;
+    } else {
+        _OCLogHelper.shared.enable = YES;
+    }
+    
+    //network
+    if (CocoaDebugSettings.shared.disableNetworkMonitoring) {
+        [_NetworkHelper.shared disable];
+    } else {
+        [_NetworkHelper.shared enable];
+    }
+    
+    //crash
+    if (CocoaDebugSettings.shared.disableCrashRecording) {
+        _CrashHelper.shared.enable = NO;
+    } else {
+        _CrashHelper.shared.enable = YES;
+    }
 }
 
 #pragma mark - CocoaDebug disable
 + (void)disable;
 {
-    [self deinitialization];
+    if (!debugDidFinishLaunching) {
+        return;
+    }
+    debugDidFinishLaunching = NO;
+
+    CocoaDebugSettings.shared.responseShake = NO;
+    CocoaDebugSettings.shared.showBubbleAndWindow = NO;
+
+    _OCLogHelper.shared.enable = NO;
+    [_NetworkHelper.shared disable];
+    _CrashHelper.shared.enable = NO;
 }
 
 @end

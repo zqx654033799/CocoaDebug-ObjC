@@ -6,13 +6,12 @@
 //
 
 #import "Bubble.h"
-#import "CocoaDebug+Extensions.h"
 #import "_HttpDatasource.h"
 #import "_DebugConsoleLabel.h"
 #import "_DebugCpuMonitor.h"
 #import "_DebugFPSMonitor.h"
 #import "_DebugMemoryMonitor.h"
-#import "CocoaDebugSettings.h"
+#import "_OCLogStoreManager.h"
 
 static CGFloat const _width  = 60;
 static CGFloat const _height = 60;
@@ -22,7 +21,7 @@ static CGFloat const _height = 60;
 @property (strong, nonatomic) _DebugConsoleLabel *fpsLabel;
 @property (strong, nonatomic) _DebugConsoleLabel *cpuLabel;
 @property (strong, nonatomic) UILabel *numberLabel;
-@property (assign, nonatomic) int networkNumber;
+@property (assign, nonatomic, readonly) NSInteger networkNumber;
 @end
 
 @implementation Bubble
@@ -42,7 +41,7 @@ static CGFloat const _height = 60;
     self.center = CGPointMake(originX, newOrigin);
 }
 
-- (void)initLabelContent:(NSString *)content foo:(BOOL)foo {
+- (void)initLabelContent:(NSString *)content {
     if ([@"🚀" isEqualToString:content] || [@"❌" isEqualToString:content]) {
         //step 0
         CGFloat const WH = 25;
@@ -50,17 +49,12 @@ static CGFloat const _height = 60;
         UILabel *label = [[UILabel alloc] initWithFrame:CGRectZero];
         label.text = content;
         //step 2
-        if (foo) {
-            label.frame = CGRectMake(self.frame.size.width/2 - WH/2, self.frame.size.height/2 - WH/2, WH, WH);
-            [self addSubview:label];
-        } else {
-            label.frame = CGRectMake(self.center.x - WH/2, self.center.y - WH/2, WH, WH);
-            [self.superview addSubview:label];
-        }
+        label.frame = CGRectMake(self.frame.size.width/2 - WH/2, self.frame.size.height/2 - WH/2, WH, WH);
+        [self addSubview:label];
         //step 3
         [UIView animateWithDuration:0.8 animations:^{
             CGRect rect = label.frame;
-            rect.origin.y = foo ? -100 : (self.center.y - 100);
+            rect.origin.y = -80;
             label.frame = rect;
             label.alpha = 0;
         } completion:^(BOOL finished) {
@@ -81,12 +75,12 @@ static CGFloat const _height = 60;
         
         //notification
         [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(reloadHttp_notification:) name:@"reloadHttp_CocoaDebug" object:nil];
-        [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(deleteAllLogs_notification) name:@"deleteAllLogs_CocoaDebug" object:nil];
+        [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(reloadHttp_notification:) name:HttpModelsChangedNotification object:nil];
         
         //Defaults
         self.memoryLabel.attributedText = [self.memoryLabel memoryAttributedStringWith:0];
-        self.cpuLabel.attributedText = [self.cpuLabel memoryAttributedStringWith:0];
-        self.fpsLabel.attributedText = [self.fpsLabel memoryAttributedStringWith:60];
+        self.cpuLabel.attributedText = [self.cpuLabel cpuAttributedStringWith:0];
+        self.fpsLabel.attributedText = [self.fpsLabel fpsAttributedStringWith:60];
         
         //Memory
         [_DebugMemoryMonitor.sharedInstance setValueBlock:^(float value) {
@@ -104,6 +98,10 @@ static CGFloat const _height = 60;
     return self;
 }
 
+- (NSInteger)networkNumber {
+    return [_HttpDatasource.shared.httpModels count];
+}
+
 - (void)dealloc
 {
     [NSNotificationCenter.defaultCenter removeObserver:self];
@@ -117,7 +115,9 @@ static CGFloat const _height = 60;
     CAGradientLayer *gradientLayer = CAGradientLayer.new;
     gradientLayer.frame = self.bounds;
     gradientLayer.cornerRadius = 10;
-    gradientLayer.colors = UIColor.colorGradientHead;
+    
+    gradientLayer.colors = @[(__bridge id)[UIColor colorWithRed:0.25 green:0.25 blue:0.25 alpha:1.00].CGColor,
+                             (__bridge id)[UIColor colorWithRed:0.15 green:0.15 blue:0.15 alpha:1.00].CGColor];
     [self.layer addSublayer:gradientLayer];
     
     self.numberLabel = [[UILabel alloc] initWithFrame:CGRectZero];
@@ -164,47 +164,23 @@ static CGFloat const _height = 60;
 - (void)reloadHttp_notification:(NSNotification *)notification {
     __weak typeof(self) weakSelf = self;
     dispatch_async(dispatch_get_main_queue(), ^{
-        if (!notification.userInfo) {return;}
-        NSString *statusCode = notification.userInfo[@"statusCode"];
-        
-        if ([_successStatusCodes containsObject:statusCode]) {
-            [weakSelf initLabelContent:@"🚀" foo:YES];
-            [weakSelf initLabelContent:@"🚀" foo:NO];
-        }
-        else if ([@"0" isEqualToString:statusCode]) { //"0" means network unavailable
-            [weakSelf initLabelContent:@"❌" foo:YES];
-            [weakSelf initLabelContent:@"❌" foo:NO];
-        }
-        else {
-            if (!statusCode) {return;}
-            [weakSelf initLabelContent:statusCode foo:YES];
-            [weakSelf initLabelContent:statusCode foo:NO];
+        if (notification.userInfo) {
+            NSString *statusCode = notification.userInfo[@"statusCode"];
+            
+            if ([_successStatusCodes containsObject:statusCode]) {
+                [weakSelf initLabelContent:@"🚀"];
+            }
+            else if ([@"0" isEqualToString:statusCode]) { //"0" means network unavailable
+                [weakSelf initLabelContent:@"❌"];
+            }
+            else {
+                if (!statusCode) {return;}
+                [weakSelf initLabelContent:statusCode];
+            }
         }
         
-        //
-        weakSelf.networkNumber = (weakSelf.networkNumber < 0 ? 0 : weakSelf.networkNumber) + 1;
         weakSelf.numberLabel.text = [@(weakSelf.networkNumber) stringValue];
-        
-        if (weakSelf.networkNumber == 0) {
-            weakSelf.numberLabel.hidden = YES;
-        } else {
-            weakSelf.numberLabel.hidden = NO;
-        }
-    });
-}
-
-- (void)deleteAllLogs_notification {
-    __weak typeof(self) weakSelf = self;
-    dispatch_async(dispatch_get_main_queue(), ^{
-        
-        weakSelf.networkNumber = 0;
-        weakSelf.numberLabel.text = [@(weakSelf.networkNumber) stringValue];
-        
-        if (weakSelf.networkNumber == 0) {
-            weakSelf.numberLabel.hidden = YES;
-        } else {
-            weakSelf.numberLabel.hidden = NO;
-        }
+        weakSelf.numberLabel.hidden = weakSelf.networkNumber == 0;
     });
 }
 
@@ -216,9 +192,8 @@ static CGFloat const _height = 60;
 }
 
 - (void)longTap {
-    [[_HttpDatasource shared] reset];
-    CocoaDebugSettings.shared.networkLastIndex = 0;
-    [NSNotificationCenter.defaultCenter postNotificationName:@"deleteAllLogs_CocoaDebug" object:nil];
+    [_OCLogStoreManager.shared reset];
+    [_HttpDatasource.shared reset];
 }
 
 - (void)panDidFire:(UIPanGestureRecognizer *)panner {

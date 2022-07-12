@@ -6,6 +6,7 @@
 //
 
 #import "CocoaDebugSettings.h"
+#import "PMUserDefaults.h"
 #import "WindowHelper.h"
 #import "CocoaDebugViewController.h"
 #import "Bubble.h"
@@ -22,20 +23,8 @@
     return onceCocoaDebugSettings;
 }
 
-- (BOOL)firstIn {
-    return [[PMUserDefaults standardUserDefaults] boolForKey:@"firstIn_CocoaDebug"];
-}
-- (void)setFirstIn:(BOOL)firstIn {
-    [[PMUserDefaults standardUserDefaults] setBool:firstIn forKey:@"firstIn_CocoaDebug"];
-    [[PMUserDefaults standardUserDefaults] synchronize];
-}
-
 - (BOOL)responseShake {
-    return [[PMUserDefaults standardUserDefaults] boolForKey:@"responseShake_CocoaDebug"];
-}
-- (void)setResponseShake:(BOOL)responseShake {
-    [[PMUserDefaults standardUserDefaults] setBool:responseShake forKey:@"responseShake_CocoaDebug"];
-    [[PMUserDefaults standardUserDefaults] synchronize];
+    return NO;
 }
 
 - (BOOL)visible {
@@ -46,13 +35,7 @@
     [[PMUserDefaults standardUserDefaults] synchronize];
 }
 
-- (BOOL)showBubbleAndWindow {
-    return [[PMUserDefaults standardUserDefaults] boolForKey:@"showBubbleAndWindow_CocoaDebug"];
-}
 - (void)setShowBubbleAndWindow:(BOOL)showBubbleAndWindow {
-    [[PMUserDefaults standardUserDefaults] setBool:showBubbleAndWindow forKey:@"showBubbleAndWindow_CocoaDebug"];
-    [[PMUserDefaults standardUserDefaults] synchronize];
-    
     CGRect bubbleFrame = WindowHelper.shared.vc.bubble.frame;
     CGFloat x = bubbleFrame.origin.x;
     CGFloat width = bubbleFrame.size.width;
@@ -74,6 +57,7 @@
         WindowHelper.shared.vc.bubble.frame = bubbleFrame;
         [WindowHelper.shared disable];
     }
+    _showBubbleAndWindow = showBubbleAndWindow;
 }
 
 - (CGFloat)bubbleFrameX {
@@ -97,14 +81,6 @@
 }
 - (void)setTabBarSelectItem:(NSInteger)tabBarSelectItem {
     [[PMUserDefaults standardUserDefaults] setInteger:tabBarSelectItem forKey:@"tabBarSelectItem_CocoaDebug"];
-    [[PMUserDefaults standardUserDefaults] synchronize];
-}
-
-- (NSInteger)networkLastIndex {
-    return [[PMUserDefaults standardUserDefaults] integerForKey:@"networkLastIndex_CocoaDebug"];
-}
-- (void)setNetworkLastIndex:(NSInteger)networkLastIndex {
-    [[PMUserDefaults standardUserDefaults] setInteger:networkLastIndex forKey:@"networkLastIndex_CocoaDebug"];
     [[PMUserDefaults standardUserDefaults] synchronize];
 }
 
@@ -165,43 +141,19 @@
     [[PMUserDefaults standardUserDefaults] synchronize];
 }
 
-- (BOOL)enableCrashRecording {
-    return [[PMUserDefaults standardUserDefaults] boolForKey:@"enableCrashRecording_CocoaDebug"];
+- (BOOL)disableCrashRecording {
+    return [[PMUserDefaults standardUserDefaults] boolForKey:@"disableCrashRecording_CocoaDebug"];
 }
-- (void)setEnableCrashRecording:(BOOL)enable {
-    [[PMUserDefaults standardUserDefaults] setBool:enable forKey:@"enableCrashRecording_CocoaDebug"];
+- (void)setDisableCrashRecording:(BOOL)enable {
+    [[PMUserDefaults standardUserDefaults] setBool:enable forKey:@"disableCrashRecording_CocoaDebug"];
     [[PMUserDefaults standardUserDefaults] synchronize];
 }
 
-- (BOOL)enableWKWebViewMonitoring {
-    return [[PMUserDefaults standardUserDefaults] boolForKey:@"enableWKWebViewMonitoring_CocoaDebug"];
+- (BOOL)disableWKWebViewMonitoring {
+    return [[PMUserDefaults standardUserDefaults] boolForKey:@"disableWKWebViewMonitoring_CocoaDebug"];
 }
-- (void)setEnableWKWebViewMonitoring:(BOOL)enable {
-    [[PMUserDefaults standardUserDefaults] setBool:enable forKey:@"enableWKWebViewMonitoring_CocoaDebug"];
-    [[PMUserDefaults standardUserDefaults] synchronize];
-}
-
-- (BOOL)enableMemoryLeaksMonitoring_ViewController {
-    return [[PMUserDefaults standardUserDefaults] boolForKey:@"enableMemoryLeaksMonitoring_UIViewController_CocoaDebug"];
-}
-- (void)setEnableMemoryLeaksMonitoring_ViewController:(BOOL)enable {
-    [[PMUserDefaults standardUserDefaults] setBool:enable forKey:@"enableMemoryLeaksMonitoring_UIViewController_CocoaDebug"];
-    [[PMUserDefaults standardUserDefaults] synchronize];
-}
-
-- (BOOL)enableMemoryLeaksMonitoring_View {
-    return [[PMUserDefaults standardUserDefaults] boolForKey:@"enableMemoryLeaksMonitoring_UIView_CocoaDebug"];
-}
-- (void)setEnableMemoryLeaksMonitoring_View:(BOOL)enable {
-    [[PMUserDefaults standardUserDefaults] setBool:enable forKey:@"enableMemoryLeaksMonitoring_UIView_CocoaDebug"];
-    [[PMUserDefaults standardUserDefaults] synchronize];
-}
-
-- (BOOL)enableMemoryLeaksMonitoring_MemberVariables {
-    return [[PMUserDefaults standardUserDefaults] boolForKey:@"enableMemoryLeaksMonitoring_MemberVariables_CocoaDebug"];
-}
-- (void)setEnableMemoryLeaksMonitoring_MemberVariables:(BOOL)enable {
-    [[PMUserDefaults standardUserDefaults] setBool:enable forKey:@"enableMemoryLeaksMonitoring_MemberVariables_CocoaDebug"];
+- (void)setDisableWKWebViewMonitoring:(BOOL)enable {
+    [[PMUserDefaults standardUserDefaults] setBool:enable forKey:@"disableWKWebViewMonitoring_CocoaDebug"];
     [[PMUserDefaults standardUserDefaults] synchronize];
 }
 @end

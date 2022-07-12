@@ -8,13 +8,11 @@
 #import "CrashDetailViewController.h"
 #import "CrashTableViewCell.h"
 #import "_CrashModel.h"
-#import "CustomTextView.h"
-#import "NSObject+CocoaDebug.h"
 
 static NSString * const _CellReuseIdentifier = @"_CrashDetailTableViewCellReuseIdentifier";
 
 @interface CrashDetailCell : UITableViewCell
-@property (weak, nonatomic, readonly) UITextView *textContent;
+@property (weak, nonatomic, readonly) UILabel *textContent;
 @property (weak, nonatomic, readonly) NSLayoutConstraint *contentH;
 @end
 
@@ -27,7 +25,7 @@ static NSString * const _CellReuseIdentifier = @"_CrashDetailTableViewCellReuseI
         self.backgroundColor = UIColor.clearColor;
         self.selectionStyle = UITableViewCellSelectionStyleNone;
 
-        UITextView *textContent = [[CustomTextView alloc] initWithFrame:CGRectZero];
+        UILabel *textContent = [[UILabel alloc] initWithFrame:CGRectZero];
         textContent.translatesAutoresizingMaskIntoConstraints = NO;
         [self.contentView addSubview:textContent];
         
@@ -36,6 +34,12 @@ static NSString * const _CellReuseIdentifier = @"_CrashDetailTableViewCellReuseI
         [self.contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-(10)-[textContent]-(10)-|" options:0 metrics:nil views:viewDict]];
         NSLayoutConstraint *contentH = [NSLayoutConstraint constraintWithItem:textContent attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1.0 constant:20];
         [self.contentView addConstraint:contentH];
+        
+        textContent.lineBreakMode = NSLineBreakByCharWrapping;
+        textContent.font = [UIFont boldSystemFontOfSize:12];
+        textContent.textColor = UIColor.whiteColor;
+        textContent.numberOfLines = 0;
+        
         _contentH = contentH;
         _textContent = textContent;
     }
@@ -69,6 +73,12 @@ static NSString * const _CellReuseIdentifier = @"_CrashDetailTableViewCellReuseI
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, DBL_EPSILON, DBL_EPSILON)];
     [self.tableView registerClass:CrashTableViewCell.class forCellReuseIdentifier:_CellReuseIdentifier];
     self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeOnDrag;
+#ifdef __IPHONE_15_0
+    if (@available(iOS 15.0, *)) {
+        // iOS15 导航栏和表格视图之间 的空隙
+        self.tableView.sectionHeaderTopPadding = 0.0f;
+    }
+#endif
     
     [self setupModels];
 }
@@ -100,6 +110,7 @@ static NSString * const _CellReuseIdentifier = @"_CrashDetailTableViewCellReuseI
 
 - (void)tableView:(UITableView *)tableView willDisplayHeaderView:(UIView *)view forSection:(NSInteger)section {
     UITableViewHeaderFooterView *header = (UITableViewHeaderFooterView *)view;
+    header.textLabel.textColor = UIColor.darkGrayColor;
     header.textLabel.text = [self tableView:tableView titleForHeaderInSection:section];
 }
 

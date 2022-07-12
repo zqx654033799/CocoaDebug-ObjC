@@ -9,13 +9,16 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import "_OCLogModel.h"
+#import <WebKit/WebKit.h>
 
-@interface _OCLogHelper : NSObject
+FOUNDATION_EXPORT void CocoaDebugLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2) NS_NO_TAIL_CALL;
+
+@interface _OCLogHelper : NSObject<WKScriptMessageHandler>
 
 @property (nonatomic, assign) BOOL enable;
 
 + (instancetype)shared;
 
-- (void)handleLogWithFile:(NSString *)file function:(NSString *)function line:(NSInteger)line message:(NSString *)message color:(UIColor *)color type:(CocoaDebugToolType)type;
+- (void)handleLogWithFile:(NSString *)file message:(NSString *)message h5LogType:(H5LogType)h5LogType;
 
 @end

@@ -6,10 +6,7 @@
 //
 
 #import "CrashTableViewCell.h"
-#import "CustomTextView.h"
-#import "CocoaDebug+Extensions.h"
 #import "_CrashModel.h"
-#import "_OCLoggerFormat.h"
 
 @interface CrashTableViewCell ()
 @property (weak, nonatomic) NSLayoutConstraint *contentH;
@@ -28,7 +25,7 @@
         UILabel *labelTitle = [[UILabel alloc] initWithFrame:CGRectZero];
         labelTitle.translatesAutoresizingMaskIntoConstraints = NO;
         [self.contentView addSubview:labelTitle];
-        UITextView *textContent = [[CustomTextView alloc] initWithFrame:CGRectZero];
+        UILabel *textContent = [[UILabel alloc] initWithFrame:CGRectZero];
         textContent.translatesAutoresizingMaskIntoConstraints = NO;
         [self.contentView addSubview:textContent];
         
@@ -42,6 +39,10 @@
         
         labelTitle.textColor = UIColor.mainGreen;
         labelTitle.font = [UIFont boldSystemFontOfSize:12];
+        textContent.lineBreakMode = NSLineBreakByCharWrapping;
+        textContent.font = [UIFont boldSystemFontOfSize:12];
+        textContent.textColor = UIColor.whiteColor;
+        textContent.numberOfLines = 0;
         
         _labelTitle = labelTitle;
         _textContent = textContent;
@@ -52,7 +53,7 @@
 - (void)setModel:(_CrashModel *)model {
     _model = model;
     
-    self.labelTitle.text = [_OCLoggerFormat formatDate:model.date];
+    self.labelTitle.text = [model.date format];
     self.textContent.text = model.name?:@"unknown crash";
     CGSize size = [self.textContent sizeThatFits:CGSizeMake(CGRectGetWidth(UIScreen.mainScreen.bounds)-30, CGFLOAT_MAX)];
     self.contentH.constant = size.height;

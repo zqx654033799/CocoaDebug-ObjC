@@ -6,8 +6,6 @@
 //
 
 #import "NetworkDetailTableViewCell.h"
-#import "CustomTextView.h"
-#import "NSObject+CocoaDebug.h"
 
 @implementation NetworkDetailModel
 - (instancetype)initWithTitle:(NSString *)title contentText:(NSString *)contentText contentImage:(UIImage *)contentImage;
@@ -23,7 +21,7 @@
 @end
 
 @interface NetworkDetailTableViewCell ()
-@property (weak, nonatomic, readonly) NSLayoutConstraint *contentTextH;
+@property (weak, nonatomic, readonly) NSLayoutConstraint *contentImageH;
 @end
 
 @implementation NetworkDetailTableViewCell
@@ -34,6 +32,8 @@
     if (self) {
         self.backgroundColor = UIColor.clearColor;
         self.selectionStyle = UITableViewCellSelectionStyleNone;
+        [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|[contentView]|" options:0 metrics:nil views:@{@"contentView": self.contentView}]];
+        [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[contentView]|" options:0 metrics:nil views:@{@"contentView": self.contentView}]];
         
         UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
         titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
@@ -44,47 +44,59 @@
         UIImageView *contentImageView = [[UIImageView alloc] initWithFrame:CGRectZero];
         contentImageView.translatesAutoresizingMaskIntoConstraints = NO;
         [self.contentView addSubview:contentImageView];
-        CustomTextView *contentTextView = [[CustomTextView alloc] initWithFrame:CGRectZero];
-        contentTextView.translatesAutoresizingMaskIntoConstraints = NO;
-        [self.contentView addSubview:contentTextView];
+        UILabel *contentLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+        contentLabel.translatesAutoresizingMaskIntoConstraints = NO;
+        [self.contentView addSubview:contentLabel];
         
-        id viewsDict = NSDictionaryOfVariableBindings(titleLabel,lineView,contentImageView,contentTextView);
+        id viewsDict = NSDictionaryOfVariableBindings(titleLabel,lineView,contentImageView,contentLabel);
         [self.contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-(15)-[titleLabel]-(15)-|" options:0 metrics:nil views:viewsDict]];
         [self.contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[lineView]|" options:0 metrics:nil views:viewsDict]];
-        [self.contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-(15)-[contentTextView]-(15)-|" options:0 metrics:nil views:viewsDict]];
+        [self.contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-(15)-[contentLabel]-(15)-|" options:0 metrics:nil views:viewsDict]];
         [self.contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-(15)-[contentImageView]-(15)-|" options:0 metrics:nil views:viewsDict]];
-        [self.contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-(10)-[titleLabel(20)][lineView(0.5)]-(5)-[contentTextView]-(5)-|" options:0 metrics:nil views:viewsDict]];
+        [self.contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-(10)-[titleLabel(20)][lineView(0.5)]-(5)-[contentLabel]-(5)-|" options:0 metrics:nil views:viewsDict]];
         [self.contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:[contentImageView]-(5)-|" options:0 metrics:nil views:viewsDict]];
-        [self.contentView addConstraint:[NSLayoutConstraint constraintWithItem:contentTextView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:contentImageView attribute:NSLayoutAttributeHeight multiplier:1.0 constant:0]];
-        NSLayoutConstraint *contentTextH = [NSLayoutConstraint constraintWithItem:contentTextView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1.0 constant:20];
-        [self.contentView addConstraint:contentTextH];
-        _contentTextH = contentTextH;
+        NSLayoutConstraint *equalTextImage = [NSLayoutConstraint constraintWithItem:contentLabel attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:contentImageView attribute:NSLayoutAttributeHeight multiplier:1.0 constant:0];
+        equalTextImage.priority = UILayoutPriorityDefaultHigh;
+        [self.contentView addConstraint:equalTextImage];
+        NSLayoutConstraint *contentImageH = [NSLayoutConstraint constraintWithItem:contentImageView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1.0 constant:20];
+        contentImageH.priority = UILayoutPriorityDefaultLow;
+        [self.contentView addConstraint:contentImageH];
+        _contentImageH = contentImageH;
         
         titleLabel.font = [UIFont systemFontOfSize:13];
-        titleLabel.textColor = [UIColor colorFromHexString:@"#808080"];
+        titleLabel.textColor = UIColor.darkGrayColor;
         lineView.backgroundColor = [UIColor colorFromHexString:@"#4D4D4D"];
+        contentLabel.lineBreakMode = NSLineBreakByCharWrapping;
+        contentLabel.font = [UIFont boldSystemFontOfSize:12];
+        contentLabel.textColor = UIColor.whiteColor;
+        contentLabel.numberOfLines = 0;
         
         _titleLabel = titleLabel;
-        _contentTextView = contentTextView;
+        _contentLabel = contentLabel;
         _contentImageView = contentImageView;
     }
     return self;
 }
 
 - (void)setModel:(NetworkDetailModel *)model {
+    _model = model;
+
     self.titleLabel.text = model.title;
     if (model.contentImage) {
         self.contentImageView.hidden = NO;
-        self.contentTextView.hidden = YES;
+        self.contentLabel.hidden = YES;
         self.contentImageView.image = model.contentImage;
+        self.contentLabel.text = nil;
         CGFloat imageHeight = (CGRectGetWidth(UIScreen.mainScreen.bounds)-30)/model.contentImage.size.width*model.contentImage.size.height;
-        self.contentTextH.constant = imageHeight;
+        self.contentImageH.priority = UILayoutPriorityRequired;
+        self.contentImageH.constant = imageHeight;
     } else {
         self.contentImageView.hidden = YES;
-        self.contentTextView.hidden = NO;
-        self.contentTextView.text = model.contentText;
-        CGSize size = [self.contentTextView sizeThatFits:CGSizeMake(CGRectGetWidth(UIScreen.mainScreen.bounds)-30, CGFLOAT_MAX)];
-        self.contentTextH.constant = size.height;
+        self.contentLabel.hidden = NO;
+        self.contentImageView.image = nil;
+        self.contentLabel.text = model.contentText;
+        self.contentImageH.priority = UILayoutPriorityDefaultLow;
+        self.contentImageH.constant = 0;
     }
 }
 @end

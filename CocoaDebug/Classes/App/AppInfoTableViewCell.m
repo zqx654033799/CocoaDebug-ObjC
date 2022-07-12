@@ -6,13 +6,11 @@
 //
 
 #import "AppInfoTableViewCell.h"
-#import "NSObject+CocoaDebug.h"
 #import "AppInfoModel.h"
 
 @interface AppInfoTableViewCell ()
 @property (weak, nonatomic, readonly) NSLayoutConstraint *leftImageViewW;
 @property (weak, nonatomic, readonly) NSLayoutConstraint *leftLableL;
-@property (weak, nonatomic, readonly) NSLayoutConstraint *leftLableW;
 @end
 
 @implementation AppInfoTableViewCell
@@ -24,6 +22,8 @@
         self.backgroundColor = [UIColor colorFromHexString:@"#333333"];
         self.selectedBackgroundView = [UIView new];
         self.selectedBackgroundView.backgroundColor = [UIColor colorFromHexString:@"#444444"];
+        [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|[contentView]|" options:0 metrics:nil views:@{@"contentView": self.contentView}]];
+        [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[contentView]|" options:0 metrics:nil views:@{@"contentView": self.contentView}]];
         
         UIImageView *leftImageView = [[UIImageView alloc] initWithFrame:CGRectZero];
         leftImageView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -42,23 +42,20 @@
         [self.contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-(15)-[leftLable]-(15)-|" options:0 metrics:nil views:viewsDict]];
         [self.contentView addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-(15)-[rightLable]-(15)-|" options:0 metrics:nil views:viewsDict]];
         [self.contentView addConstraint:[NSLayoutConstraint constraintWithItem:leftImageView attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:self.contentView attribute:NSLayoutAttributeCenterY multiplier:1.0 constant:0]];
-        
+        [rightLable setContentHuggingPriority:UILayoutPriorityFittingSizeLevel forAxis:UILayoutConstraintAxisHorizontal];
+
         NSLayoutConstraint *leftImageViewW = [NSLayoutConstraint constraintWithItem:leftImageView attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1.0 constant:0];
         [leftImageView addConstraint:leftImageViewW];
         _leftImageViewW = leftImageViewW;
         NSLayoutConstraint *leftLableL = [NSLayoutConstraint constraintWithItem:leftLable attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:leftImageView attribute:NSLayoutAttributeTrailing multiplier:1.0 constant:0];
         [self.contentView addConstraint:leftLableL];
-        NSLayoutConstraint *leftLableW = [NSLayoutConstraint constraintWithItem:leftLable attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationGreaterThanOrEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1.0 constant:100];
-        [self.contentView addConstraint:leftLableW];
         _leftLableL = leftLableL;
-        _leftLableW = leftLableW;
-        
+
+        leftLable.preferredMaxLayoutWidth = 100;
         leftLable.textColor = [UIColor colorFromHexString:@"#B8B8B8"];
         rightLable.textColor = [UIColor whiteColor];
         leftLable.font = [UIFont systemFontOfSize:17];
         rightLable.font = [UIFont systemFontOfSize:17];
-        leftLable.numberOfLines = 1;
-        leftLable.adjustsFontSizeToFitWidth = YES;
         rightLable.numberOfLines = 0;
         rightLable.textAlignment = NSTextAlignmentRight;
         rightLable.lineBreakMode = NSLineBreakByCharWrapping;
@@ -80,8 +77,6 @@
     self.leftLableL.constant = model.image ? 5 : 0;
 
     self.leftLable.text = model.leftString;
-    CGSize size = [self.leftLable sizeThatFits:CGSizeMake(CGFLOAT_MAX, 20)];
-    self.leftLableW.constant = size.width>120?120:size.width;
     
     self.rightLable.text = model.rightString;
     self.accessoryView = model.accessoryView;

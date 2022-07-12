@@ -171,6 +171,18 @@
     }
 }
 
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didFinishCollectingMetrics:(NSURLSessionTaskMetrics *)metrics API_AVAILABLE(ios(10.0))
+{
+    _QNSURLSessionDemuxTaskInfo *    taskInfo;
+    
+    taskInfo = [self taskInfoForTask:task];
+    if ([taskInfo.delegate respondsToSelector:@selector(URLSession:task:didFinishCollectingMetrics:)]) {
+        [taskInfo performBlock:^{
+            [taskInfo.delegate URLSession:session task:task didFinishCollectingMetrics:metrics];
+        }];
+    }
+}
+
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task needNewBodyStream:(void (^)(NSInputStream *bodyStream))completionHandler
 {
     _QNSURLSessionDemuxTaskInfo *    taskInfo;

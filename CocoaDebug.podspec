@@ -1,7 +1,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'CocoaDebug'
-  s.version          = '0.1.0'
+  s.version          = '1.0.1'
   s.summary          = 'iOS Debug Tool ObjC.'
 
   s.homepage         = 'https://github.com/zqx654033799/CocoaDebug-ObjC'

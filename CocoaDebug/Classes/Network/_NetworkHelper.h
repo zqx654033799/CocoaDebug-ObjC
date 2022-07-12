@@ -9,6 +9,7 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 
+@class _HttpModel;
 @interface _NetworkHelper : NSObject
 
 /**
@@ -20,13 +21,8 @@
  */
 @property (nonatomic, copy) NSArray<NSString *> *ignoredURLs;
 
-/**
- *  protobuf
- */
-@property (nonatomic, copy) NSDictionary<NSString *, NSArray<NSString*> *> *protobufTransferMap;
 
-
-@property (nonatomic, assign) BOOL isNetworkEnable;
+@property (nonatomic, assign, readonly) BOOL isNetworkEnable;
 
 
 /**
@@ -39,5 +35,7 @@
 - (void)disable;
 
 + (instancetype)shared;
+
+- (void)handleHttpWithModel:(_HttpModel *)model;
 
 @end

@@ -9,63 +9,62 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 
+/// 异步执行block
+FOUNDATION_EXPORT void cocoadebug_async_run_queue(dispatch_block_t block);
+
+/// 主线程执行block
+FOUNDATION_EXPORT void cocoadebug_async_run_main(dispatch_block_t block);
+
+/// 方法交换
+FOUNDATION_EXPORT void cocoadebug_swizzlingForInstance(Class theClass, SEL originalSelector, SEL swizzledSelector);
+/// 方法交换
+FOUNDATION_EXPORT void cocoadebug_swizzlingForClass(Class theClass, SEL originalSelector, SEL swizzledSelector);
+
+/// tmp/CocoaDebug/pathComponent工作目录
+FOUNDATION_EXPORT NSString *cocoadebug_workDirectory(NSString *pathComponent);
+
 /*************************************************/
 
 @interface NSData (CocoaDebug)
++ (NSData *)dataWithInputStream:(NSInputStream *)stream;
 
-+ (NSData *_Nullable)dataWithInputStream:(NSInputStream *_Nullable)stream;
+@property (readonly) NSString *dataToString;
+@property (readonly) id dataToObject;
+@property (readonly) NSString *dataToPrettyPrintString;
 
+// 获取一定字节长度的字符串
+- (NSString *)fetchStringWithByteLength:(NSUInteger)length;
 @end
-
-/*************************************************/
 
 @interface NSString (CocoaDebug)
+@property (nonatomic, readonly) UIColor *hexColor;
+@property (readonly) NSString *headerString;
 
-- (CGFloat)heightWithFont:(UIFont *_Nullable)font constraintToWidth:(CGFloat)width;
-
+// 获取一定字节长度的字符串
+- (NSString *)fetchStringWithByteLength:(NSUInteger)length;
 @end
 
-/*************************************************/
+@interface NSDictionary (CocoaDebug)
+@property (readonly) NSData *objectToData;
+@property (readonly) NSString *objectToString;
+@property (readonly) NSString *headerToString;
+@end
 
-@interface NSURLRequest (CocoaDebug)
+@interface NSArray (CocoaDebug)
+@property (readonly) NSData *objectToData;
+@property (readonly) NSString *objectToString;
+@end
 
-- (NSString *_Nullable)requestId;
-- (void)setRequestId:(NSString *_Nullable)requestId;
-
-- (NSNumber*_Nullable)startTime;
-- (void)setStartTime:(NSNumber*_Nullable)startTime;
-
+@interface NSDate (CocoaDebug)
+- (NSString *)format;
 @end
 
 /*************************************************/
 
 @interface UIColor (CocoaDebug)
+@property (copy, nonatomic, class, readonly) UIColor *mainGreen;
 
-+ (UIColor *_Nullable)colorFromHexString:(NSString *_Nullable)hexString;
-
-@end
-
-/*************************************************/
-
-@interface NSDictionary (CocoaDebug)
-
-- (NSString *_Nullable)_stringForKey:(id<NSCopying>_Nullable)key;
-- (NSArray *_Nullable)_arrayForKey:(id<NSCopying>_Nullable)key;
-- (NSDictionary *_Nullable)_dictionaryForKey:(id<NSCopying>_Nullable)key;
-- (NSInteger)_integerForKey:(id<NSCopying>_Nullable)key;
-- (int64_t)_int64ForKey:(id<NSCopying>_Nullable)key;
-- (int32_t)_int32ForKey:(id<NSCopying>_Nullable)key;
-- (float)_floatForKey:(id<NSCopying>_Nullable)key;
-- (double)_doubleForKey:(id<NSCopying>_Nullable)key;
-- (BOOL)_boolForKey:(id<NSCopying>_Nullable)key;
-
-- (NSString *_Nullable)_stringForKey:(id<NSCopying>_Nullable)key default:(NSString * _Nullable)defaultValue;
-- (bool)_boolForKey:(id<NSCopying>_Nullable)key default:(bool)defaultValue;
-- (NSInteger)_integerForKey:(id<NSCopying>_Nullable)key default:(NSInteger)defaultValue;
-- (float)_floatForKey:(id<NSCopying>_Nullable)key default:(float)defaultValue;
-- (NSArray *_Nullable)_arrayForKey:(id<NSCopying>_Nullable)key default:(NSArray * _Nullable)defaultValue;
-- (NSDictionary *_Nullable)_dictionaryForKey:(id<NSCopying>_Nullable)key default:(NSDictionary * _Nullable)defaultValue;
-
++ (UIColor *)colorFromHexString:(NSString *)hexString;
 @end
 
 /*************************************************/
@@ -73,12 +72,16 @@
 @interface UIImage (CocoaDebug)
 
 /** 根据一个GIF图片的data数据 获得GIF image对象 */
-+ (UIImage *_Nullable)imageWithGIFData:(NSData *_Nullable)data;
++ (UIImage *)imageWithGIFData:(NSData *)data;
++ (UIImage *)imageWithGIFURL:(NSURL *)url;
 
-/** 根据本地GIF图片名 获得GIF image对象 */
-+ (UIImage *_Nullable)imageWithGIFNamed:(NSString *_Nullable)name;
+@end
 
-/** 根据一个GIF图片的URL 获得GIF image对象 */
-+ (void)imageWithGIFUrl:(NSString *_Nullable)url gifImageBlock:(void(^_Nullable)(UIImage *_Nullable gifImage))gifImageBlock;
+@interface UITableView (CocoaDebug)
+- (void)tableViewScrollToBottomAnimated:(BOOL)animated;
+- (void)tableViewScrollToHeaderAnimated:(BOOL)animated;
+@end
 
+@interface NSURLSessionTask (CocoaDebug)
+@property (readonly) NSString *cocoadebugUID;
 @end

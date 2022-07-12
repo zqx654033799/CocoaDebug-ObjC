@@ -11,8 +11,6 @@
 
 + (instancetype)shared;
 
-@property (nonatomic, readwrite) BOOL firstIn;
-
 @property (nonatomic, readwrite) BOOL responseShake;
 @property (nonatomic, readwrite) BOOL visible;
 
@@ -24,8 +22,6 @@
 @property (nonatomic, readwrite) CGFloat bubbleFrameY;
 
 @property (nonatomic, readwrite) NSInteger tabBarSelectItem;
-
-@property (nonatomic, readwrite) NSInteger networkLastIndex;
 
 #pragma - mark : Log
 @property (nonatomic, readwrite) NSInteger logSelectIndex;
@@ -40,11 +36,8 @@
 /// 关闭Log监控
 @property (nonatomic, readwrite) BOOL disableLogMonitoring;
 /// 开启崩溃记录
-@property (nonatomic, readwrite) BOOL enableCrashRecording;
+@property (nonatomic, readwrite) BOOL disableCrashRecording;
 /// 开启WKWebView监控
-@property (nonatomic, readwrite) BOOL enableWKWebViewMonitoring;
-@property (nonatomic, readwrite) BOOL enableMemoryLeaksMonitoring_ViewController;
-@property (nonatomic, readwrite) BOOL enableMemoryLeaksMonitoring_View;
-@property (nonatomic, readwrite) BOOL enableMemoryLeaksMonitoring_MemberVariables;
+@property (nonatomic, readwrite) BOOL disableWKWebViewMonitoring;
 
 @end

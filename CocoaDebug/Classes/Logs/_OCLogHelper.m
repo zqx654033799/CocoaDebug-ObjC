@@ -8,6 +8,15 @@
 
 #import "_OCLogHelper.h"
 #import "_OCLogStoreManager.h"
+#import <WebKit/WebKit.h>
+
+void CocoaDebugLog(NSString *format, ...)
+{
+    va_list lv;
+    va_start(lv, format);
+    NSLogv(format, lv);
+    va_end(lv);
+}
 
 @implementation _OCLogHelper
 
@@ -31,42 +40,35 @@
     return self;
 }
 
-- (NSString *)parseFileInfo:(NSString *)file function:(NSString *)function line:(NSInteger)line
+- (void)userContentController:(id)userContentController didReceiveScriptMessage:(id)message;
 {
-    if ([file isEqualToString:@"XXX"] && [function isEqualToString:@"XXX"] && line == 1) {
-        return @"XXX|XXX|1";
-    }
+    WKScriptMessage *sMessage = message;
+    NSString *name = [NSString stringWithFormat:@"[WKWebView] %@", sMessage.name];
+    NSString *body = [NSString stringWithFormat:@"%@", sMessage.body];
     
-    if (line == 0) {
-        NSString *fileName = [[file componentsSeparatedByString:@"/"] lastObject];
-        return [NSString stringWithFormat:@"%@ %@\n", fileName, function];
-    }
+    [self handleLogWithFile:name message:body h5LogType:H5LogTypeWK];
     
-    if (line == 999999999) {
-        NSString *fileName = [[file componentsSeparatedByString:@"/"] lastObject];
-        return [NSString stringWithFormat:@"%@ %@\n", fileName, function];
-    }
-    
-    NSString *fileName = [[file componentsSeparatedByString:@"/"] lastObject];
-    return [NSString stringWithFormat:@"%@[%ld]%@\n", fileName, (long)line, function];
+    CocoaDebugLog(@"%@ %@", name, body);
 }
 
-- (void)handleLogWithFile:(NSString *)file function:(NSString *)function line:(NSInteger)line message:(NSString *)message color:(UIColor *)color type:(CocoaDebugToolType)type
+- (void)handleLogWithFile:(NSString *)file message:(NSString *)message h5LogType:(H5LogType)h5LogType;
 {
-    if (!self.enable) {return;}
-    
-    //1.
-    NSString *fileInfo = [self parseFileInfo:file function:function line:line];
-    
-    //2.
-    _OCLogModel *newLog = [[_OCLogModel alloc] initWithContent:message color:color fileInfo:fileInfo isTag:NO type:type];
-    if (line == 0 && ![fileInfo isEqualToString:@"XXX|XXX|1"]) {
-        newLog.h5LogType = H5LogTypeNotNone;
+    if (!self.enable) {
+        return;
     }
-    [[_OCLogStoreManager shared] addLog:newLog];
-    
-    //3.
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"refreshLogs_CocoaDebug" object:nil userInfo:nil];
+    if (_IsStringEmpty(message)) {
+        return;
+    }
+    message = [message stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+    if (_IsStringEmpty(message)) {
+        return;
+    }
+    if (_IsStringNotEmpty(file)) {
+        file = [file stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+    }
+    _OCLogModel *log = [[_OCLogModel alloc] initWithContent:message fileInfo:file];
+    log.h5LogType = h5LogType;
+    [_OCLogStoreManager.shared addLog:log];
 }
 
 @end

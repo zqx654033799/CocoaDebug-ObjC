@@ -6,13 +6,12 @@
 //
 
 #import "AppInfoModel.h"
-#import "CocoaDebugSettings.h"
 #include <sys/utsname.h>
+#import <WebKit/WebKit.h>
 
 NSNotificationName const AppInfoChangedNeedRestartNotification = @"_AppInfoChangedNeedRestartNotification";
 
 @interface AppInfoModel ()
-@property (copy, nonatomic) BOOL (^valueBlock)(void);
 @end
 
 @implementation AppInfoModel
@@ -84,87 +83,116 @@ NSNotificationName const AppInfoChangedNeedRestartNotification = @"_AppInfoChang
     slowAnimM.leftString = @"slow animations";
     slowAnimM.rightString = @"";
     slowAnimM.accessoryView = UISwitch.new;
-    slowAnimM.valueBlock = ^BOOL{
-        return CocoaDebugSettings.shared.slowAnimations;
-    };
+    slowAnimM.accessoryView.on = CocoaDebugSettings.shared.slowAnimations;
     [slowAnimM.accessoryView addTarget:slowAnimM action:@selector(slowAnimationsSwitchChanged:) forControlEvents:UIControlEventValueChanged];
-    NSDictionary *debugD = @{@"Debug": @[slowAnimM]};
+    AppInfoModel *restoreUserDefaultsM = [AppInfoModel new];
+    restoreUserDefaultsM.leftString = @"清除缓存数据";
+    restoreUserDefaultsM.rightString = @"";
+    restoreUserDefaultsM.accessoryView = UISwitch.new;
+    [restoreUserDefaultsM.accessoryView addTarget:restoreUserDefaultsM action:@selector(restoreUserDefaultsChanged:) forControlEvents:UIControlEventValueChanged];
+    AppInfoModel *restoreAppM = [AppInfoModel new];
+    restoreAppM.leftString = @"清除所有数据";
+    restoreAppM.rightString = @"";
+    restoreAppM.accessoryView = UISwitch.new;
+    [restoreAppM.accessoryView addTarget:restoreAppM action:@selector(restoreAppSwitchChanged:) forControlEvents:UIControlEventValueChanged];
+    AppInfoModel *showSettingM = [AppInfoModel new];
+    showSettingM.leftString = @"打开\"设置\"";
+    showSettingM.rightString = @"";
+    showSettingM.accessoryView = UISwitch.new;
+    [showSettingM.accessoryView addTarget:showSettingM action:@selector(showSettingSwitchChanged:) forControlEvents:UIControlEventValueChanged];
+    NSDictionary *debugD = @{@"Debug": @[slowAnimM,restoreUserDefaultsM,restoreAppM,showSettingM]};
     //Monitor
     AppInfoModel *networkM = [AppInfoModel new];
     networkM.leftString = @"network";
     networkM.rightString = nil;
     networkM.accessoryView = UISwitch.new;
-    networkM.valueBlock = ^BOOL{
-        return !CocoaDebugSettings.shared.disableNetworkMonitoring;
-    };
+    networkM.accessoryView.on = !CocoaDebugSettings.shared.disableNetworkMonitoring;
     [networkM.accessoryView addTarget:networkM action:@selector(networkSwitchChanged:) forControlEvents:UIControlEventValueChanged];
     AppInfoModel *logM = [AppInfoModel new];
     logM.leftString = @"log";
     logM.rightString = nil;
     logM.accessoryView = UISwitch.new;
-    logM.valueBlock = ^BOOL{
-        return !CocoaDebugSettings.shared.disableLogMonitoring;
-    };
+    logM.accessoryView.on = !CocoaDebugSettings.shared.disableLogMonitoring;
     [logM.accessoryView addTarget:logM action:@selector(logSwitchChanged:) forControlEvents:UIControlEventValueChanged];
     AppInfoModel *crashSM = [AppInfoModel new];
     crashSM.leftString = @"crash";
     crashSM.rightString = nil;
     crashSM.accessoryView = UISwitch.new;
-    crashSM.valueBlock = ^BOOL{
-        return CocoaDebugSettings.shared.enableCrashRecording;
-    };
+    crashSM.accessoryView.on = !CocoaDebugSettings.shared.disableCrashRecording;
     [crashSM.accessoryView addTarget:crashSM action:@selector(crashSwitchChanged:) forControlEvents:UIControlEventValueChanged];
     AppInfoModel *webViewM = [AppInfoModel new];
     webViewM.leftString = @"WKWebView";
     webViewM.rightString = nil;
     webViewM.accessoryView = UISwitch.new;
-    webViewM.valueBlock = ^BOOL{
-        return CocoaDebugSettings.shared.enableWKWebViewMonitoring;
-    };
+    webViewM.accessoryView.on = !CocoaDebugSettings.shared.disableWKWebViewMonitoring;
     [webViewM.accessoryView addTarget:webViewM action:@selector(webViewSwitchChanged:) forControlEvents:UIControlEventValueChanged];
-    AppInfoModel *uvcM = [AppInfoModel new];
-    uvcM.leftString = @"UIViewController memory leaks";
-    uvcM.rightString = @"";
-    uvcM.accessoryView = UISwitch.new;
-    uvcM.valueBlock = ^BOOL{
-        return CocoaDebugSettings.shared.enableMemoryLeaksMonitoring_ViewController;
-    };
-    [uvcM.accessoryView addTarget:uvcM action:@selector(controllerMemoryLeaksSwitchChanged:) forControlEvents:UIControlEventValueChanged];
-    AppInfoModel *uvM = [AppInfoModel new];
-    uvM.leftString = @"UIView memory leaks";
-    uvM.rightString = nil;
-    uvM.accessoryView = UISwitch.new;
-    uvM.valueBlock = ^BOOL{
-        return CocoaDebugSettings.shared.enableMemoryLeaksMonitoring_View;
-    };
-    [uvM.accessoryView addTarget:uvM action:@selector(viewMemoryLeaksSwitchChanged:) forControlEvents:UIControlEventValueChanged];
-    AppInfoModel *mvM = [AppInfoModel new];
-    mvM.leftString = @"member variables memory leaks";
-    mvM.rightString = nil;
-    mvM.accessoryView = UISwitch.new;
-    mvM.valueBlock = ^BOOL{
-        return CocoaDebugSettings.shared.enableMemoryLeaksMonitoring_MemberVariables;
-    };
-    [mvM.accessoryView addTarget:mvM action:@selector(memberVariablesMemoryLeaksSwitchChanged:) forControlEvents:UIControlEventValueChanged];
-    NSDictionary *monitorD = @{@"Monitor": @[networkM,logM,crashSM,webViewM,uvcM,uvM,mvM]};
+    NSDictionary *monitorD = @{@"Monitor": @[networkM,logM,crashSM,webViewM]};
     //General
     AppInfoModel *aboutM = [AppInfoModel new];
     aboutM.leftString = @"about";
-    aboutM.rightString = @"CocoaDebug 1.4.8";
+    aboutM.rightString = @"CocoaDebug 1.0.1";
     NSDictionary *generalD = @{@"General": @[aboutM]};
     
     return @[crashD, appInfoD, deviceD, debugD, monitorD, generalD];
 }
 
-- (UISwitch *)accessoryView {
-    if (_accessoryView) {
-        _accessoryView.on = self.valueBlock ? self.valueBlock() : NO;
-    }
-    return _accessoryView;
-}
-
 - (void)slowAnimationsSwitchChanged:(UISwitch *)sender {
     CocoaDebugSettings.shared.slowAnimations = sender.on;
+}
+
+- (void)restoreUserDefaultsChanged:(UISwitch *)sender {
+    // 清空UserDefaults
+    [NSUserDefaults.standardUserDefaults removePersistentDomainForName:NSBundle.mainBundle.bundleIdentifier];
+    // 清空WK缓存
+    [WKWebsiteDataStore.defaultDataStore removeDataOfTypes:WKWebsiteDataStore.allWebsiteDataTypes modifiedSince:NSDate.distantPast completionHandler:^{}];
+    // 清空tmp
+    NSArray *deletePaths = @[NSTemporaryDirectory()];
+    for (id deletePath in deletePaths) {
+        NSArray *contentsName = [NSFileManager.defaultManager contentsOfDirectoryAtPath:deletePath error:nil];
+        for (id name in contentsName) {
+            id path = [deletePath stringByAppendingPathComponent:name];
+            [NSFileManager.defaultManager removeItemAtPath:path error:nil];
+        }
+    }
+    [[NSNotificationCenter defaultCenter] postNotificationName:AppInfoChangedNeedRestartNotification object:nil];
+}
+
+- (void)restoreAppSwitchChanged:(UISwitch *)sender {
+    // 清空UserDefaults
+    [NSUserDefaults.standardUserDefaults removePersistentDomainForName:NSBundle.mainBundle.bundleIdentifier];
+    // 清空WK缓存
+    [WKWebsiteDataStore.defaultDataStore removeDataOfTypes:WKWebsiteDataStore.allWebsiteDataTypes modifiedSince:NSDate.distantPast completionHandler:^{}];
+    // 清空钥匙串
+    NSArray *secItemClasses = @[(__bridge id)kSecClassGenericPassword,
+                           (__bridge id)kSecClassInternetPassword,
+                           (__bridge id)kSecClassCertificate,
+                           (__bridge id)kSecClassKey,
+                           (__bridge id)kSecClassIdentity];
+    for (id secItemClass in secItemClasses) {
+        NSDictionary *spec = @{(__bridge id)kSecClass: secItemClass};
+        SecItemDelete((__bridge CFDictionaryRef)spec);
+    }
+    // 清空Document
+    // 清空Library/Caches
+    NSArray *deletePaths = @[[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject],
+                             [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) firstObject]];
+    for (id deletePath in deletePaths) {
+        NSArray *contentsName = [NSFileManager.defaultManager contentsOfDirectoryAtPath:deletePath error:nil];
+        for (id name in contentsName) {
+            id path = [deletePath stringByAppendingPathComponent:name];
+            [NSFileManager.defaultManager removeItemAtPath:path error:nil];
+        }
+    }
+    [[NSNotificationCenter defaultCenter] postNotificationName:AppInfoChangedNeedRestartNotification object:nil];
+}
+
+- (void)showSettingSwitchChanged:(UISwitch *)sender {
+    [sender setOn:NO];
+    if (@available(iOS 10.0, *)) {
+        [UIApplication.sharedApplication openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString] options:@{} completionHandler:NULL];
+    } else {
+        [UIApplication.sharedApplication openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
+    }
 }
 
 - (void)networkSwitchChanged:(UISwitch *)sender {
@@ -178,24 +206,12 @@ NSNotificationName const AppInfoChangedNeedRestartNotification = @"_AppInfoChang
 }
 
 - (void)crashSwitchChanged:(UISwitch *)sender {
-    CocoaDebugSettings.shared.enableCrashRecording = sender.on;
+    CocoaDebugSettings.shared.disableCrashRecording = !sender.on;
     [[NSNotificationCenter defaultCenter] postNotificationName:AppInfoChangedNeedRestartNotification object:nil];
 }
 
 - (void)webViewSwitchChanged:(UISwitch *)sender {
-    CocoaDebugSettings.shared.enableWKWebViewMonitoring = sender.on;
+    CocoaDebugSettings.shared.disableWKWebViewMonitoring = !sender.on;
     [[NSNotificationCenter defaultCenter] postNotificationName:AppInfoChangedNeedRestartNotification object:nil];
-}
-
-- (void)controllerMemoryLeaksSwitchChanged:(UISwitch *)sender {
-    CocoaDebugSettings.shared.enableMemoryLeaksMonitoring_ViewController = sender.on;
-}
-
-- (void)viewMemoryLeaksSwitchChanged:(UISwitch *)sender {
-    CocoaDebugSettings.shared.enableMemoryLeaksMonitoring_View = sender.on;
-}
-
-- (void)memberVariablesMemoryLeaksSwitchChanged:(UISwitch *)sender {
-    CocoaDebugSettings.shared.enableMemoryLeaksMonitoring_MemberVariables = sender.on;
 }
 @end

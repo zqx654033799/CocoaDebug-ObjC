@@ -8,7 +8,6 @@
 #import "CrashListViewController.h"
 #import "CrashTableViewCell.h"
 #import "_CrashModel.h"
-#import "NSObject+CocoaDebug.h"
 #import "_CrashStoreManager.h"
 #import "CrashDetailViewController.h"
 #import "CocoaDebugBackBarButtonItem.h"
@@ -47,6 +46,12 @@ static NSString * const _CellReuseIdentifier = @"_CrashListTableViewCellReuseIde
     self.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, DBL_EPSILON, DBL_EPSILON)];
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, DBL_EPSILON, DBL_EPSILON)];
     [self.tableView registerClass:CrashTableViewCell.class forCellReuseIdentifier:_CellReuseIdentifier];
+#ifdef __IPHONE_15_0
+    if (@available(iOS 15.0, *)) {
+        // iOS15 导航栏和表格视图之间 的空隙
+        self.tableView.sectionHeaderTopPadding = 0.0f;
+    }
+#endif
     
     self.dataSource = _CrashStoreManager.shared.crashArray;
     

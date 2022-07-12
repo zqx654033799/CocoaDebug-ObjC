@@ -11,7 +11,7 @@
 
 typedef NS_ENUM(NSInteger, H5LogType) {
     H5LogTypeNone = 0,
-    H5LogTypeNotNone
+    H5LogTypeWK
 };
 
 typedef NS_ENUM (NSInteger, CocoaDebugToolType) {
@@ -26,14 +26,13 @@ typedef NS_ENUM (NSInteger, CocoaDebugToolType) {
 @property (nonatomic, copy) NSString *fileInfo;
 @property (nonatomic, copy) NSString *content;
 @property (nonatomic, strong) NSDate *date;
-@property (nonatomic, strong) UIColor *color;
+
+@property (nonatomic,copy)NSString  *logFilePath;
 
 @property (nonatomic, assign) BOOL isTag;
-@property (nonatomic, copy) NSString *str;
-@property (nonatomic, copy) NSAttributedString *attr;
 
 @property (nonatomic, assign) H5LogType h5LogType;
 
-- (instancetype)initWithContent:(NSString *)content color:(UIColor *)color fileInfo:(NSString *)fileInfo isTag:(BOOL)isTag type:(CocoaDebugToolType)type;
+- (instancetype)initWithContent:(NSString *)content fileInfo:(NSString *)fileInfo;
 
 @end

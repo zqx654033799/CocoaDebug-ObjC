@@ -7,72 +7,52 @@
 //
 
 #import "_OCLogModel.h"
-#import "_OCLoggerFormat.h"
-#import "CocoaDebug+Extensions.h"
+
+static NSInteger const _MAXSize = 512;
 
 @implementation _OCLogModel
 
-- (instancetype)initWithContent:(NSString *)content color:(UIColor *)color fileInfo:(NSString *)fileInfo isTag:(BOOL)isTag type:(CocoaDebugToolType)type
++ (NSString *)pathAppendingComponent:(NSString *)str
+{
+    NSString *logPath = cocoadebug_workDirectory(@"Log");
+    return [logPath stringByAppendingPathComponent:str];
+}
+
+- (instancetype)initWithContent:(NSString *)content fileInfo:(NSString *)fileInfo
 {
     if (self = [super init]) {
-        
-        if ([fileInfo isEqualToString:@"XXX|XXX|1"]) {
-            if (type == CocoaDebugToolTypeProtobuf) {
-                fileInfo = @"Protobuf\n";
-            } else {
-                fileInfo = @"\n";
-            }
-        }
-        
+
         self.Id = [[NSUUID UUID] UUIDString];
         self.fileInfo = fileInfo;
         self.date = [NSDate date];
-        self.color = color;
-        self.isTag = isTag;
-        self.content = content;
         
-        /////////////////////////////////////////////////////////////////////////
-        
-        NSInteger startIndex = 0;
-        NSInteger lenghtDate = 0;
-        NSString *stringContent = @"";
-        
-        stringContent = [stringContent stringByAppendingFormat:@"[%@]", [_OCLoggerFormat formatDate:self.date]];
-        lenghtDate = [stringContent length];
-        startIndex = [stringContent length];
-        
-        if (self.fileInfo) {
-            stringContent = [stringContent stringByAppendingFormat:@"%@%@", self.fileInfo, self.content];
+        NSData *contentData = [content dataUsingEncoding:NSUTF8StringEncoding];
+        if (contentData.length > _MAXSize) {
+            self.logFilePath = [self.class pathAppendingComponent:[NSString stringWithFormat:@"%@.log", _Id]];
+            __weak typeof(self) weakSelf = self;
+            cocoadebug_async_run_queue(^{
+                if (!weakSelf) return;
+                [contentData writeToFile:weakSelf.logFilePath atomically:NO];
+            });
+
+            content = [contentData fetchStringWithByteLength:_MAXSize];
+            self.content = [content stringByAppendingString:@"..."];
         } else {
-            stringContent = [stringContent stringByAppendingFormat:@"%@", self.content];
+            self.content = content;
         }
-    
-        NSMutableAttributedString *attstr = [[NSMutableAttributedString alloc] initWithString:stringContent];
-        [attstr addAttribute:NSForegroundColorAttributeName value:self.color range:NSMakeRange(0, [stringContent length])];
-        
-        NSRange range = NSMakeRange(0, lenghtDate);
-        [attstr addAttribute:NSForegroundColorAttributeName value: UIColor.mainGreen range: range];
-        [attstr addAttribute:NSFontAttributeName value: [UIFont boldSystemFontOfSize:12] range: range];
-        
-        NSRange range2 = NSMakeRange(startIndex, self.fileInfo.length);
-        [attstr addAttribute: NSForegroundColorAttributeName value: [UIColor grayColor]  range: range2];
-        [attstr addAttribute: NSFontAttributeName value: [UIFont boldSystemFontOfSize:12] range: range2];
-        
-        
-        //换行
-        NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
-        paragraphStyle.lineBreakMode = NSLineBreakByCharWrapping;
-        
-        NSRange rang3 = NSMakeRange(0, attstr.length);
-        [attstr addAttribute:NSParagraphStyleAttributeName value:paragraphStyle range:rang3];
-        
-        
-        //
-        self.str = stringContent;
-        self.attr = [attstr copy];
     }
     
     return self;
 }
 
+- (void)dealloc
+{
+    if (!self.logFilePath) {
+        return;
+    }
+    NSString *logPath = self.logFilePath;
+    cocoadebug_async_run_queue(^{
+        [NSFileManager.defaultManager removeItemAtPath:logPath error:nil];
+    });
+}
 @end

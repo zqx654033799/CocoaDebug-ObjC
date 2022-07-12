@@ -11,7 +11,7 @@
 @interface LogTableViewCell : UITableViewCell
 
 @property (weak, nonatomic, readonly) UILabel *labelTitle;
-@property (weak, nonatomic, readonly) UITextView *labelContent;
+@property (weak, nonatomic, readonly) UILabel *labelContent;
 
 @property (weak, nonatomic) _OCLogModel *model;
 

@@ -6,8 +6,6 @@
 //
 
 #import "CocoaDebugNavigationController.h"
-#import "CocoaDebug+Extensions.h"
-#import "CocoaDebugSettings.h"
 
 @interface CocoaDebugNavigationController ()
 
@@ -26,6 +24,17 @@
                                                NSForegroundColorAttributeName: UIColor.mainGreen};
     [self.navigationBar setBackgroundImage:[UIImage new] forBarMetrics:UIBarMetricsDefault];
     self.navigationBar.shadowImage = [UIImage new];
+    
+#ifdef __IPHONE_15_0
+    if (@available(iOS 15.0, *)) {
+        UINavigationBarAppearance *appearance = [UINavigationBarAppearance new];
+        [appearance configureWithOpaqueBackground];
+        appearance.titleTextAttributes = self.navigationBar.titleTextAttributes;
+        appearance.backgroundColor = self.navigationBar.barTintColor;
+        self.navigationBar.standardAppearance = appearance;
+        self.navigationBar.scrollEdgeAppearance = appearance;
+    }
+#endif
 }
 
 - (void)viewWillAppear:(BOOL)animated {

@@ -7,8 +7,9 @@
 //
 
 #import "_NetworkHelper.h"
+#import "_HttpModel.h"
+#import "_HttpDatasource.h"
 #import "_CustomHTTPProtocol.h"
-#import "NSObject+CocoaDebug.h"
 
 @interface _NetworkHelper()
 
@@ -31,21 +32,29 @@
 //default value for @property
 - (id)init {
     if (self = [super init])  {
-        self.isNetworkEnable = YES;
+        _isNetworkEnable = YES;
     }
     return self;
 }
 
 - (void)enable
 {
-    self.isNetworkEnable = YES;
+    _isNetworkEnable = YES;
     [NSURLProtocol registerClass:[_CustomHTTPProtocol class]];
 }
 
 - (void)disable
 {
-    self.isNetworkEnable = NO;
+    _isNetworkEnable = NO;
     [NSURLProtocol unregisterClass:[_CustomHTTPProtocol class]];
 }
+- (void)handleHttpWithModel:(_HttpModel *)model;
+{
+    if (!_isNetworkEnable) return;
+    if ([_HttpDatasource.shared addHttpRequset:model])
+    {
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"reloadHttp_CocoaDebug" object:nil userInfo:@{@"statusCode": model.statusCode}];
+    }
 
+}
 @end

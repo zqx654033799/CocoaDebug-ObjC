@@ -9,7 +9,6 @@
 #import "_FileInfo.h"
 #import "_Sandboxer.h"
 #import "_SandboxerHelper.h"
-#import "_Sandboxer-Header.h"
 #import <QuickLook/QuickLook.h>
 
 @interface _FileInfo ()
@@ -137,6 +136,13 @@
 }
 
 - (BOOL)isCanPreviewInQuickLook {
+    if (self.type == _FileTypePNG ||
+        self.type == _FileTypeJPG ||
+        self.type == _FileTypeGIF ||
+        self.type == _FileTypeSVG ||
+        self.type == _FileTypeBMP) {
+        return NO;
+    }
     return [QLPreviewController canPreviewItem:self.URL];
 }
 
@@ -195,6 +201,22 @@
             }
         }
     }
+    
+    [fileInfos sortUsingComparator:^NSComparisonResult(_FileInfo *obj1, _FileInfo *obj2) {
+        if (obj1.isDirectory) {
+            if (obj2.isDirectory) {
+                return [obj1.displayName compare:obj2.displayName];
+            } else {
+                return NSOrderedAscending;
+            }
+        } else {
+            if (obj2.isDirectory) {
+                return NSOrderedDescending;
+            } else {
+                return [obj1.displayName compare:obj2.displayName];
+            }
+        }
+    }];
     
     return fileInfos;
 }

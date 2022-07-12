@@ -7,6 +7,10 @@
 
 #import <Foundation/Foundation.h>
 
+@interface UIWindow (Extensions)
+
+@end
+
 @class CocoaDebugViewController;
 @interface WindowHelper : NSObject
 

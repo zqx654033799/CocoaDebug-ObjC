@@ -41,10 +41,12 @@
 #pragma mark - Private Methods
 
 - (void)_config {
-    _systemFilesHidden = YES;
     _homeFileURL = [NSURL fileURLWithPath:NSHomeDirectory() isDirectory:YES];
+    
+    _systemFilesHidden = NO;
     _extensionHidden = NO;
-    _shareable = YES;
+    _fileDeletable = YES;
+    _directoryDeletable = YES;
 }
 
 #pragma mark - Setters

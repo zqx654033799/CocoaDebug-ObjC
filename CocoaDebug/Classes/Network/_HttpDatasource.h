@@ -13,6 +13,9 @@ FOUNDATION_EXTERN NSNotificationName const HttpModelsChangedNotification;
 
 @interface _HttpDatasource : NSObject
 
+- (_HttpModel *)cacheHttpModelForTask:(NSURLSessionTask *)task;
+- (void)cacheHttpModel:(_HttpModel *)model forTask:(NSURLSessionTask *)task;
+
 @property (nonatomic, strong) NSMutableArray<_HttpModel *> *httpModels;
 
 + (instancetype)shared;

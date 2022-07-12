@@ -32,6 +32,7 @@
         _date = [coder decodeObjectForKey:@"date"];
         _name = [coder decodeObjectForKey:@"name"];
         _reason = [coder decodeObjectForKey:@"reason"];
+        _version = [coder decodeObjectForKey:@"version"];
         _callStacks = [coder decodeObjectForKey:@"callStacks"];
     }
     return self;
@@ -43,6 +44,7 @@
     [coder encodeObject:_date forKey:@"date"];
     [coder encodeObject:_name forKey:@"name"];
     [coder encodeObject:_reason forKey:@"reason"];
+    [coder encodeObject:_version forKey:@"version"];
     [coder encodeObject:_callStacks forKey:@"callStacks"];
 }
 @end

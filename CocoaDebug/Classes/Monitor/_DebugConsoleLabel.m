@@ -59,12 +59,17 @@
 
 - (NSAttributedString *)fpsAttributedStringWith:(float)fps {
     CGFloat progress = fps / 60.0;
-    UIColor *color = [UIColor colorWithHue:0.27 * (progress - 0.2) saturation:1 brightness:0.9 alpha:1];
+    UIColor *color = [UIColor colorWithHue:0.27 * (progress - 0.2) saturation:1 brightness:0.9 alpha:0.8];
     NSMutableAttributedString *text = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"%d FPS",(int)round(fps)]];
     [text addAttribute:NSForegroundColorAttributeName value:color range:NSMakeRange(0, text.length - 3)];
-    [text addAttribute:NSForegroundColorAttributeName value:[UIColor whiteColor] range:NSMakeRange(text.length - 3, 3)];
+    [text addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithWhite:1 alpha:0.8] range:NSMakeRange(text.length - 3, 3)];
     [text addAttribute:NSFontAttributeName value:self.mainFont range:NSMakeRange(0, text.length)];
     [text addAttribute:NSFontAttributeName value:self.subFont range:NSMakeRange(text.length - 4, 1)];
+    NSShadow *shadow = [[NSShadow alloc] init];
+    shadow.shadowBlurRadius = 1.0; //阴影扩散范围
+    shadow.shadowColor = UIColor.blackColor; //阴影颜色
+    shadow.shadowOffset = CGSizeMake(0.0, 0.0); //阴影偏移位置
+    [text addAttribute:NSShadowAttributeName value:shadow range:NSMakeRange(0, text.length)];
     return text;
 }
 
@@ -73,9 +78,14 @@
     UIColor *color = [self getColorByPercent:progress];;
     NSMutableAttributedString *text = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"%.1f M",memory]];
     [text addAttribute:NSForegroundColorAttributeName value:color range:NSMakeRange(0, text.length - 1)];
-    [text addAttribute:NSForegroundColorAttributeName value:[UIColor whiteColor] range:NSMakeRange(text.length - 1, 1)];
+    [text addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithWhite:1 alpha:0.8] range:NSMakeRange(text.length - 1, 1)];
     [text addAttribute:NSFontAttributeName value:self.mainFont range:NSMakeRange(0, text.length)];
     [text addAttribute:NSFontAttributeName value:self.subFont range:NSMakeRange(text.length - 2, 1)];
+    NSShadow *shadow = [[NSShadow alloc] init];
+    shadow.shadowBlurRadius = 1.0; //阴影扩散范围
+    shadow.shadowColor = UIColor.blackColor; //阴影颜色
+    shadow.shadowOffset = CGSizeMake(0.0, 0.0); //阴影偏移位置
+    [text addAttribute:NSShadowAttributeName value:shadow range:NSMakeRange(0, text.length)];
     return text;
 }
 
@@ -84,9 +94,14 @@
     UIColor *color = [self getColorByPercent:progress];
     NSMutableAttributedString *text = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"%d%% CPU",(int)round(cpu)]];
     [text addAttribute:NSForegroundColorAttributeName value:color range:NSMakeRange(0, text.length - 3)];
-    [text addAttribute:NSForegroundColorAttributeName value:[UIColor whiteColor] range:NSMakeRange(text.length - 3, 3)];
+    [text addAttribute:NSForegroundColorAttributeName value:[UIColor colorWithWhite:1 alpha:0.8] range:NSMakeRange(text.length - 3, 3)];
     [text addAttribute:NSFontAttributeName value:self.mainFont range:NSMakeRange(0, text.length)];
     [text addAttribute:NSFontAttributeName value:self.subFont range:NSMakeRange(text.length - 4, 1)];
+    NSShadow *shadow = [[NSShadow alloc] init];
+    shadow.shadowBlurRadius = 1.0; //阴影扩散范围
+    shadow.shadowColor = UIColor.blackColor; //阴影颜色
+    shadow.shadowOffset = CGSizeMake(0.0, 0.0); //阴影偏移位置
+    [text addAttribute:NSShadowAttributeName value:shadow range:NSMakeRange(0, text.length)];
     return text;
 }
 
@@ -102,7 +117,7 @@
         g = 255 - ((percent - 0.5 ) * one) ;
         r = 255;
     }
-    return [UIColor colorWithRed:r/255.0 green:g/255.0 blue:0 alpha:1];
+    return [UIColor colorWithRed:r/255.0 green:g/255.0 blue:0 alpha:0.8];
 }
 
 @end

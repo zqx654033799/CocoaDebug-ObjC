@@ -15,12 +15,14 @@
 @property (copy, nonatomic) NSString *contentText;
 @property (copy, nonatomic) UIImage *contentImage;
 
+@property (copy, nonatomic) NSString *contentFile;
+
 @end
 
 @interface NetworkDetailTableViewCell : UITableViewCell
 
 @property (weak, nonatomic, readonly) UILabel *titleLabel;
-@property (weak, nonatomic, readonly) UITextView *contentTextView;
+@property (weak, nonatomic, readonly) UILabel *contentLabel;
 @property (weak, nonatomic, readonly) UIImageView *contentImageView;
 
 @property (weak, nonatomic) NetworkDetailModel *model;

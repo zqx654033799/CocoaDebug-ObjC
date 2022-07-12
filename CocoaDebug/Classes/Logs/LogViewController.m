@@ -6,8 +6,6 @@
 //
 
 #import "LogViewController.h"
-#import "CocoaDebugSettings.h"
-#import "CocoaDebug+Extensions.h"
 #import "LogTableViewCell.h"
 #import "_OCLogStoreManager.h"
 
@@ -15,21 +13,17 @@ static NSString * const _CellReuseIdentifier = @"_LogTableViewCellReuseIdentifie
 
 @interface LogViewController ()<UISearchBarDelegate,UITableViewDataSource,UITableViewDelegate>
 @property (weak, nonatomic) UITableView *defaultTableView;
-@property (weak, nonatomic) UITableView *colorTableView;
 @property (weak, nonatomic) UITableView *h5TableView;
 
 @property (strong, nonatomic) UISearchBar *defaultSearchBar;
-@property (strong, nonatomic) UISearchBar *colorSearchBar;
 @property (strong, nonatomic) UISearchBar *h5SearchBar;
 @end
 
 @implementation LogViewController {
     NSMutableArray *_defaultLogArray;
-    NSMutableArray *_colorLogArray;
     NSMutableArray *_h5LogArray;
     
     BOOL _reachEndDefault;
-    BOOL _reachEndColor;
     BOOL _reachEndH5;
 }
 
@@ -42,9 +36,8 @@ static NSString * const _CellReuseIdentifier = @"_LogTableViewCellReuseIdentifie
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor blackColor];
     
-    self.navigationItem.rightBarButtonItems = @[[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(resetLogs:)],
-                                               [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"_icon_file_type_down" inBundle:[NSBundle bundleForClass:self.class] compatibleWithTraitCollection:nil] style:UIBarButtonItemStylePlain target:self action:@selector(didTapDown:)]];
-    UISegmentedControl *segmentedControl = [[UISegmentedControl alloc] initWithItems:@[@"Log",@"Color",@"Web"]];
+    self.navigationItem.rightBarButtonItems = @[[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(resetLogs:)], [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"_icon_file_type_down" inBundle:[NSBundle bundleForClass:self.class] compatibleWithTraitCollection:nil] style:UIBarButtonItemStylePlain target:self action:@selector(didTapDown:)]];
+    UISegmentedControl *segmentedControl = [[UISegmentedControl alloc] initWithItems:@[@"Log",@"Web"]];
     if (UIScreen.mainScreen.bounds.size.width <= 330) {
         [segmentedControl setTitleTextAttributes:@{NSFontAttributeName: [UIFont systemFontOfSize:11]} forState:UIControlStateNormal];
     } else {
@@ -54,14 +47,14 @@ static NSString * const _CellReuseIdentifier = @"_LogTableViewCellReuseIdentifie
     self.navigationItem.titleView = segmentedControl;
 
     UITableView *defaultTableView = [[UITableView alloc] initWithFrame:CGRectZero];
-    UITableView *colorTableView = [[UITableView alloc] initWithFrame:CGRectZero];
     UITableView *h5TableView = [[UITableView alloc] initWithFrame:CGRectZero];
     
-    for (UITableView *tableView in @[h5TableView,colorTableView,defaultTableView]) {
+    for (UITableView *tableView in @[h5TableView,defaultTableView]) {
         tableView.translatesAutoresizingMaskIntoConstraints = NO;
         [self.view addSubview:tableView];
         
         tableView.allowsSelection = NO;
+        tableView.estimatedRowHeight = 44;
         tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
         tableView.backgroundColor = UIColor.blackColor;
         tableView.delegate = self;
@@ -70,33 +63,34 @@ static NSString * const _CellReuseIdentifier = @"_LogTableViewCellReuseIdentifie
         tableView.tableFooterView = [[UIView alloc] init];
         tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeOnDrag;
         [tableView registerClass:LogTableViewCell.class forCellReuseIdentifier:_CellReuseIdentifier];
+#ifdef __IPHONE_15_0
+        if (@available(iOS 15.0, *)) {
+            // iOS15 导航栏和表格视图之间 的空隙
+            tableView.sectionHeaderTopPadding = 0.0f;
+        }
+#endif
     }
-    id viewsDict = NSDictionaryOfVariableBindings(defaultTableView,colorTableView,h5TableView);
+    id viewsDict = NSDictionaryOfVariableBindings(defaultTableView,h5TableView);
     [self.view addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[defaultTableView]|" options:0 metrics:nil views:viewsDict]];
     [self.view addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|[defaultTableView]|" options:0 metrics:nil views:viewsDict]];
-    [self.view addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[colorTableView]|" options:0 metrics:nil views:viewsDict]];
-    [self.view addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|[colorTableView]|" options:0 metrics:nil views:viewsDict]];
     [self.view addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[h5TableView]|" options:0 metrics:nil views:viewsDict]];
     [self.view addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|[h5TableView]|" options:0 metrics:nil views:viewsDict]];
     
     UISearchBar *defaultSearchBar = [[UISearchBar alloc] initWithFrame:CGRectZero];
-    UISearchBar *colorSearchBar = [[UISearchBar alloc] initWithFrame:CGRectZero];
     UISearchBar *h5SearchBar = [[UISearchBar alloc] initWithFrame:CGRectZero];
     
-    for (UISearchBar *searchBar in @[defaultSearchBar,colorSearchBar,h5SearchBar]) {
+    for (UISearchBar *searchBar in @[defaultSearchBar,h5SearchBar]) {
         [self.view addSubview:searchBar];
         searchBar.frame = CGRectMake(0, 0, CGRectGetWidth(self.view.bounds), 44);
         if (@available(iOS 13.0, *)) {
             searchBar.searchTextField.backgroundColor = UIColor.whiteColor;
             searchBar.searchTextField.leftViewMode = UITextFieldViewModeNever;
             searchBar.searchTextField.leftView = nil;
-            searchBar.searchTextField.returnKeyType = UIReturnKeyDefault;
         } else {
             UITextField *searchField = [searchBar valueForKey:@"_searchField"];
             searchField.backgroundColor = UIColor.whiteColor;
             searchField.leftViewMode = UITextFieldViewModeNever;
             searchField.leftView = nil;
-            searchField.returnKeyType = UIReturnKeyDefault;
         }
         searchBar.enablesReturnKeyAutomatically = NO;
         searchBar.barTintColor = UIColor.blackColor;
@@ -104,19 +98,15 @@ static NSString * const _CellReuseIdentifier = @"_LogTableViewCellReuseIdentifie
     }
     
     _defaultSearchBar = defaultSearchBar;
-    _colorSearchBar = colorSearchBar;
     _h5SearchBar = h5SearchBar;
     
     _defaultTableView = defaultTableView;
-    _colorTableView = colorTableView;
     _h5TableView = h5TableView;
     
     _defaultLogArray = _OCLogStoreManager.shared.defaultLogArray.mutableCopy;
-    _colorLogArray = _OCLogStoreManager.shared.colorLogArray.mutableCopy;
     _h5LogArray = _OCLogStoreManager.shared.h5LogArray.mutableCopy;
     
     _reachEndDefault = YES;
-    _reachEndColor = YES;
     _reachEndH5 = YES;
     
     segmentedControl.selectedSegmentIndex = CocoaDebugSettings.shared.logSelectIndex;
@@ -124,12 +114,10 @@ static NSString * const _CellReuseIdentifier = @"_LogTableViewCellReuseIdentifie
     
     NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
     [nc addObserver:self selector:@selector(defaultLogChanged) name:LogDefaultChangedNotification object:nil];
-    [nc addObserver:self selector:@selector(colorLogChanged) name:LogColorChangedNotification object:nil];
     [nc addObserver:self selector:@selector(h5LogChanged) name:LogH5ChangedNotification object:nil];
     
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [self.defaultTableView tableViewScrollToBottomAnimated:NO];
-        [self.colorTableView tableViewScrollToBottomAnimated:NO];
         [self.h5TableView tableViewScrollToBottomAnimated:NO];
     });
 }
@@ -150,20 +138,6 @@ static NSString * const _CellReuseIdentifier = @"_LogTableViewCellReuseIdentifie
         [_defaultTableView reloadData];
         if (_reachEndDefault) {
             [_defaultTableView tableViewScrollToBottomAnimated:YES];
-        }
-    }
-}
-
-- (void)colorLogChanged {
-    @synchronized (self) {
-        if (self.colorSearchBar.text.length > 0) {
-            [self searchBar:self.colorSearchBar textDidChange:self.colorSearchBar.text];
-            return;
-        }
-        _colorLogArray = _OCLogStoreManager.shared.colorLogArray.mutableCopy;
-        [_colorTableView reloadData];
-        if (_reachEndColor) {
-            [_colorTableView tableViewScrollToBottomAnimated:YES];
         }
     }
 }
@@ -190,9 +164,6 @@ static NSString * const _CellReuseIdentifier = @"_LogTableViewCellReuseIdentifie
             [self.view addSubview:self.defaultTableView];
         }   break;
         case 1: {
-            [self.view addSubview:self.colorTableView];
-        }   break;
-        case 2: {
             [self.view addSubview:self.h5TableView];
         }   break;
         default:
@@ -207,10 +178,6 @@ static NSString * const _CellReuseIdentifier = @"_LogTableViewCellReuseIdentifie
             _reachEndDefault = NO;
         }   break;
         case 1: {
-            [self.colorTableView tableViewScrollToHeaderAnimated:YES];
-            _reachEndColor = NO;
-        }   break;
-        case 2: {
             [self.h5TableView tableViewScrollToHeaderAnimated:YES];
             _reachEndH5 = NO;
         }   break;
@@ -226,10 +193,6 @@ static NSString * const _CellReuseIdentifier = @"_LogTableViewCellReuseIdentifie
             _reachEndDefault = YES;
         }   break;
         case 1: {
-            [self.colorTableView tableViewScrollToBottomAnimated:YES];
-            _reachEndColor = YES;
-        }   break;
-        case 2: {
             [self.h5TableView tableViewScrollToBottomAnimated:YES];
             _reachEndH5 = YES;
         }   break;
@@ -244,9 +207,6 @@ static NSString * const _CellReuseIdentifier = @"_LogTableViewCellReuseIdentifie
             [_OCLogStoreManager.shared resetDefaultLogs];
         }   break;
         case 1: {
-            [_OCLogStoreManager.shared resetColorLogs];
-        }   break;
-        case 2: {
             [_OCLogStoreManager.shared resetH5Logs];
         }   break;
         default:
@@ -275,21 +235,6 @@ static NSString * const _CellReuseIdentifier = @"_LogTableViewCellReuseIdentifie
         }
         [self.defaultTableView reloadData];
     }
-    else if ([searchBar isEqual:self.colorSearchBar]) {
-        NSMutableArray *colorLogArray = _OCLogStoreManager.shared.colorLogArray;
-        if (searchText.length == 0) {
-            _colorLogArray = colorLogArray.mutableCopy;
-        } else {
-            NSMutableArray *colorSearchModels = [NSMutableArray arrayWithCapacity:0];
-            [colorLogArray enumerateObjectsUsingBlock:^(_OCLogModel *obj, NSUInteger idx, BOOL *stop) {
-                if ([obj.content.lowercaseString containsString:searchText.lowercaseString]) {
-                    [colorSearchModels addObject:obj];
-                }
-            }];
-            _colorLogArray = colorSearchModels;
-        }
-        [self.colorTableView reloadData];
-    }
     else if ([searchBar isEqual:self.h5SearchBar]) {
         NSMutableArray *h5LogArray = _OCLogStoreManager.shared.h5LogArray;
         if (searchText.length == 0) {
@@ -312,9 +257,6 @@ static NSString * const _CellReuseIdentifier = @"_LogTableViewCellReuseIdentifie
     if ([scrollView isEqual:self.defaultTableView]) {
         _reachEndDefault = NO;
     }
-    else if ([scrollView isEqual:self.colorTableView]) {
-        _reachEndColor = NO;
-    }
     else if ([scrollView isEqual:self.h5TableView]) {
         _reachEndH5 = NO;
     }
@@ -325,21 +267,55 @@ static NSString * const _CellReuseIdentifier = @"_LogTableViewCellReuseIdentifie
     if ([tableView isEqual:self.defaultTableView]) {
         return self.defaultSearchBar;
     }
-    if ([tableView isEqual:self.colorTableView]) {
-        return self.colorSearchBar;
-    }
     if ([tableView isEqual:self.h5TableView]) {
         return self.h5SearchBar;
     }
     return nil;
 }
 
+- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
+    return 55;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
+    return 0.001f;
+}
+
+- (BOOL)tableView:(UITableView *)tableView shouldShowMenuForRowAtIndexPath:(NSIndexPath *)indexPath {
+    LogTableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
+    id content = cell.model.content;
+    __weak typeof(self) weakSelf = self;
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleAlert];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:NULL]];
+    if (!cell.model.logFilePath) {
+        NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
+        style.alignment = NSTextAlignmentLeft;
+        NSMutableAttributedString *attributedMessage = [[NSMutableAttributedString alloc] initWithString:content attributes:@{NSParagraphStyleAttributeName: style, NSFontAttributeName: [UIFont systemFontOfSize:13]}];
+        [alertController setValue:attributedMessage forKey:@"attributedMessage"];
+        [alertController addAction:[UIAlertAction actionWithTitle:@"拷贝" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+            UIPasteboard.generalPasteboard.string = content;
+        }]];
+    } else {
+        content = [NSURL fileURLWithPath:cell.model.logFilePath];
+    }
+    [alertController addAction:[UIAlertAction actionWithTitle:@"共享" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        UIActivityViewController *activityController = [[UIActivityViewController alloc] initWithActivityItems:@[content] applicationActivities:nil];
+        [weakSelf presentViewController:activityController animated:YES completion:NULL];
+    }]];
+    [self presentViewController:alertController animated:YES completion:NULL];
+    return NO;
+}
+
+- (BOOL)tableView:(UITableView *)tableView canPerformAction:(SEL)action forRowAtIndexPath:(NSIndexPath *)indexPath withSender:(id)sender {
+    return NO;
+}
+
+- (void)tableView:(UITableView *)tableView performAction:(SEL)action forRowAtIndexPath:(NSIndexPath *)indexPath withSender:(id)sender {
+}
+
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     if ([tableView isEqual:self.defaultTableView]) {
         return _defaultLogArray.count;
-    }
-    if ([tableView isEqual:self.colorTableView]) {
-        return _colorLogArray.count;
     }
     if ([tableView isEqual:self.h5TableView]) {
         return _h5LogArray.count;
@@ -352,9 +328,6 @@ static NSString * const _CellReuseIdentifier = @"_LogTableViewCellReuseIdentifie
     if ([tableView isEqual:self.defaultTableView]) {
         cell.model = _defaultLogArray[indexPath.row];
     }
-    else if ([tableView isEqual:self.colorTableView]) {
-        cell.model = _colorLogArray[indexPath.row];
-    }
     else if ([tableView isEqual:self.h5TableView]) {
         cell.model = _h5LogArray[indexPath.row];
     }
@@ -365,9 +338,6 @@ static NSString * const _CellReuseIdentifier = @"_LogTableViewCellReuseIdentifie
     __block _OCLogModel *model = nil;
     if ([tableView isEqual:self.defaultTableView]) {
         model = _defaultLogArray[indexPath.row];
-    }
-    else if ([tableView isEqual:self.colorTableView]) {
-        model = _colorLogArray[indexPath.row];
     }
     else if ([tableView isEqual:self.h5TableView]) {
         model = _h5LogArray[indexPath.row];
@@ -388,14 +358,6 @@ static NSString * const _CellReuseIdentifier = @"_LogTableViewCellReuseIdentifie
         handler = ^(UIContextualAction *action, __kindof UIView *sourceView, void (^completionHandler)(BOOL)) {
             __strong typeof(self) strongSelf = weakSelf;
             _OCLogModel *model = strongSelf->_defaultLogArray[indexPath.row];
-            [_OCLogStoreManager.shared removeLog:model];
-            completionHandler(YES);
-        };
-    }
-    else if ([tableView isEqual:self.colorTableView]) {
-        handler = ^(UIContextualAction *action, __kindof UIView *sourceView, void (^completionHandler)(BOOL)) {
-            __strong typeof(self) strongSelf = weakSelf;
-            _OCLogModel *model = strongSelf->_colorLogArray[indexPath.row];
             [_OCLogStoreManager.shared removeLog:model];
             completionHandler(YES);
         };

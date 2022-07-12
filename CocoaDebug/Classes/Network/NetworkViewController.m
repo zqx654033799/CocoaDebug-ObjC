@@ -7,8 +7,6 @@
 
 #import "NetworkViewController.h"
 #import "NetworkTableViewCell.h"
-#import "NSObject+CocoaDebug.h"
-#import "CocoaDebug+Extensions.h"
 #import "_HttpDatasource.h"
 #import "NetworkDetailViewController.h"
 #import "CocoaDebugBackBarButtonItem.h"
@@ -27,7 +25,7 @@ static NSString * const _CellReuseIdentifier = @"_NetworkTableViewCellReuseIdent
 
 - (instancetype)init
 {
-    self = [super initWithStyle:UITableViewStyleGrouped];
+    self = [super initWithStyle:UITableViewStylePlain];
     if (self) {
     }
     return self;
@@ -46,9 +44,15 @@ static NSString * const _CellReuseIdentifier = @"_NetworkTableViewCellReuseIdent
     self.navigationItem.rightBarButtonItems = @[[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(tapTrashButton:)],
     [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"_icon_file_type_down" inBundle:[NSBundle bundleForClass:self.class] compatibleWithTraitCollection:nil] style:UIBarButtonItemStylePlain target:self action:@selector(didTapDown:)]];
     
+    self.tableView.estimatedRowHeight = 44;
     self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
-    self.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, DBL_EPSILON, DBL_EPSILON)];
-    self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, DBL_EPSILON, DBL_EPSILON)];
+    self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeOnDrag;
+#ifdef __IPHONE_15_0
+    if (@available(iOS 15.0, *)) {
+        // iOS15 导航栏和表格视图之间 的空隙
+        self.tableView.sectionHeaderTopPadding = 0.0f;
+    }
+#endif
     
     [self.tableView registerClass:NetworkTableViewCell.class forCellReuseIdentifier:_CellReuseIdentifier];
     UISearchBar *searchBar = [[UISearchBar alloc] initWithFrame:CGRectZero];
@@ -69,6 +73,18 @@ static NSString * const _CellReuseIdentifier = @"_NetworkTableViewCellReuseIdent
     searchBar.enablesReturnKeyAutomatically = NO;
     searchBar.barTintColor = UIColor.blackColor;
     searchBar.delegate = self;
+    
+    if (@available(iOS 13.0, *)) {
+        searchBar.searchTextField.backgroundColor = UIColor.whiteColor;
+        searchBar.searchTextField.leftViewMode = UITextFieldViewModeNever;
+        searchBar.searchTextField.leftView = nil;
+    } else {
+        UITextField *searchField = [searchBar valueForKey:@"_searchField"];
+        searchField.backgroundColor = UIColor.whiteColor;
+        searchField.leftViewMode = UITextFieldViewModeNever;
+        searchField.leftView = nil;
+    }
+    
     _searchBar = searchBar;
     
     _reachEnd = YES;
@@ -147,6 +163,14 @@ static NSString * const _CellReuseIdentifier = @"_NetworkTableViewCellReuseIdent
 }
 
 #pragma mark - Table view data source
+- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
+    return 55;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
+    return 0.001f;
+}
+
 - (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
     return self.searchBar;
 }

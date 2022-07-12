@@ -13,10 +13,11 @@
 #import "_QNSURLSessionDemux.h"
 
 //liman
-#import "_Swizzling.h"
 #import "_NetworkHelper.h"
 #import "_HttpDatasource.h"
 #import "NSObject+CocoaDebug.h"
+#import "PMUserDefaults.h"
+#import <objc/runtime.h>
 
 // https://stackoverflow.com/questions/27604052/nsurlsessiontask-authentication-challenge-completionhandler-and-nsurlauthenticat
 @interface CPURLSessionChallengeSender : NSObject <NSURLAuthenticationChallengeSender>
@@ -134,9 +135,7 @@ typedef void (^_ChallengeCompletionHandler)(NSURLSessionAuthChallengeDisposition
 @property (atomic, copy,   readwrite) _ChallengeCompletionHandler        pendingChallengeCompletionHandler;  ///< The completion handler that matches pendingChallenge; main thread only.
 
 //liman
-@property (atomic, strong) NSURLResponse         *response;
 @property (atomic, strong) NSMutableData         *data;
-@property (atomic, strong) NSError               *error;
 
 @end
 
@@ -206,66 +205,6 @@ static id<_CustomHTTPProtocolDelegate> sDelegate;
  */
 
 static NSString * kOurRecursiveRequestFlagProperty = @"com.apple.dts.CustomHTTPProtocol";
-
-//liman
-//+ (BOOL)canInitWithRequest:(NSURLRequest *)request
-//{
-//    BOOL        shouldAccept;
-//    NSURL *     url;
-//    NSString *  scheme;
-//
-//    // Check the basics.  This routine is extremely defensive because experience has shown that
-//    // it can be called with some very odd requests <rdar://problem/15197355>.
-//
-//    shouldAccept = (request != nil);
-//    if (shouldAccept) {
-//        url = [request URL];
-//        shouldAccept = (url != nil);
-//    }
-//    if ( ! shouldAccept ) {
-//        [self customHTTPProtocol:nil logWithFormat:@"decline request (malformed)"];
-//    }
-//
-//    // Decline our recursive requests.
-//
-//    if (shouldAccept) {
-//        shouldAccept = ([self propertyForKey:kOurRecursiveRequestFlagProperty inRequest:request] == nil);
-//        if ( ! shouldAccept ) {
-//            [self customHTTPProtocol:nil logWithFormat:@"decline request %@ (recursive)", url];
-//        }
-//    }
-//
-//    // Get the scheme.
-//
-//    if (shouldAccept) {
-//        scheme = [[url scheme] lowercaseString];
-//        shouldAccept = (scheme != nil);
-//
-//        if ( ! shouldAccept ) {
-//            [self customHTTPProtocol:nil logWithFormat:@"decline request %@ (no scheme)", url];
-//        }
-//    }
-//
-//    // Look for "http" or "https".
-//    //
-//    // Flip either or both of the following to YESes to control which schemes go through this custom
-//    // NSURLProtocol subclass.
-//
-//    if (shouldAccept) {
-//        shouldAccept = /* DISABLES CODE */ (NO) && [scheme isEqual:@"http"];
-//        if ( ! shouldAccept ) {
-//            shouldAccept = YES && [scheme isEqual:@"https"];
-//        }
-//
-//        if ( ! shouldAccept ) {
-//            [self customHTTPProtocol:nil logWithFormat:@"decline request %@ (scheme mismatch)", url];
-//        } else {
-//            [self customHTTPProtocol:nil logWithFormat:@"accept request %@", url];
-//        }
-//    }
-//
-//    return shouldAccept;
-//}
 
 //liman
 + (BOOL)canInitWithRequest:(NSURLRequest *)request
@@ -380,6 +319,15 @@ static NSString * kOurRecursiveRequestFlagProperty = @"com.apple.dts.CustomHTTPP
     self.task = [[[self class] sharedDemux] dataTaskWithRequest:recursiveRequest delegate:self modes:self.modes];
     //assert(self.task != nil);
     
+    _HttpModel *model = [_HttpDatasource.shared cacheHttpModelForTask:self.task];
+    if (!model) {
+        model = [[_HttpModel alloc] initWithTask:self.task];
+        // cache
+        [_HttpDatasource.shared cacheHttpModel:model forTask:self.task];
+
+        [model setRequest:recursiveRequest];
+    }
+
     [self.task resume];
 }
 
@@ -409,75 +357,6 @@ static NSString * kOurRecursiveRequestFlagProperty = @"com.apple.dts.CustomHTTPP
         // which specificallys traps and ignores the error.
     }
     // Don't nil out self.modes; see property declaration comments for a a discussion of this.
-    
-    
-    
-    //liman
-    if (![_NetworkHelper shared].isNetworkEnable) {
-        return;
-    }
-    
-    _HttpModel* model = [[_HttpModel alloc] init];
-    model.url = self.request.URL;
-    model.method = self.request.HTTPMethod;
-    model.mineType = self.response.MIMEType;
-    if (self.request.HTTPBody) {
-        model.requestData = self.request.HTTPBody;
-    }
-    if (self.request.HTTPBodyStream) {//liman
-        NSData* data = [NSData dataWithInputStream:self.request.HTTPBodyStream];
-        model.requestData = data;
-    }
-    
-    NSHTTPURLResponse* httpResponse = (NSHTTPURLResponse*)self.response;
-    model.statusCode = [NSString stringWithFormat:@"%d",(int)httpResponse.statusCode];
-    model.responseData = self.data;
-    model.size = [[NSByteCountFormatter new] stringFromByteCount:self.data.length];
-    model.isImage = [self.response.MIMEType rangeOfString:@"image"].location != NSNotFound;
-    
-    //时间
-    NSTimeInterval startTimeDouble = self.startTime;
-    NSTimeInterval endTimeDouble = [[NSDate date] timeIntervalSince1970];
-    NSTimeInterval durationDouble = fabs(endTimeDouble - startTimeDouble);
-    
-    model.startTime = [NSString stringWithFormat:@"%f", startTimeDouble];
-    model.endTime = [NSString stringWithFormat:@"%f", endTimeDouble];
-    model.totalDuration = [NSString stringWithFormat:@"%f (s)", durationDouble];
-    
-    
-    model.errorDescription = self.error.description;
-    model.errorLocalizedDescription = self.error.localizedDescription;
-    model.requestHeaderFields = self.request.allHTTPHeaderFields;
-    
-    if ([self.response isKindOfClass:[NSHTTPURLResponse class]]) {
-        model.responseHeaderFields = ((NSHTTPURLResponse *)self.response).allHeaderFields;
-    }
-    
-    if (self.response.MIMEType == nil) {
-        model.isImage = NO;
-    }
-    
-    if ([model.url.absoluteString length] > 4) {
-        NSString *str = [model.url.absoluteString substringFromIndex: [model.url.absoluteString length] - 4];
-        if ([str isEqualToString:@".png"] || [str isEqualToString:@".PNG"] || [str isEqualToString:@".jpg"] || [str isEqualToString:@".JPG"] || [str isEqualToString:@".gif"] || [str isEqualToString:@".GIF"]) {
-            model.isImage = YES;
-        }
-    }
-    if ([model.url.absoluteString length] > 5) {
-        NSString *str = [model.url.absoluteString substringFromIndex: [model.url.absoluteString length] - 5];
-        if ([str isEqualToString:@".jpeg"] || [str isEqualToString:@".JPEG"]) {
-            model.isImage = YES;
-        }
-    }
-    
-    //处理500,404等错误
-    model = [self handleError:self.error model:model];
-    
-    
-    if ([[_HttpDatasource shared] addHttpRequset:model])
-    {
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"reloadHttp_CocoaDebug" object:nil userInfo:@{@"statusCode":model.statusCode}];
-    }
 }
 
 #pragma mark * Authentication challenge handling
@@ -701,49 +580,6 @@ static NSString * kOurRecursiveRequestFlagProperty = @"com.apple.dts.CustomHTTPP
 #pragma mark * NSURLSession delegate callbacks
 
 //liman
-//- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task willPerformHTTPRedirection:(NSHTTPURLResponse *)response newRequest:(NSURLRequest *)newRequest completionHandler:(void (^)(NSURLRequest *))completionHandler
-//{
-//    NSMutableURLRequest *    redirectRequest;
-//
-//    #pragma unused(session)
-//    #pragma unused(task)
-//    //assert(task == self.task);
-//    //assert(response != nil);
-//    //assert(newRequest != nil);
-//    #pragma unused(completionHandler)
-//    //assert(completionHandler != nil);
-//    //assert([NSThread currentThread] == self.clientThread);
-//
-//
-//    // The new request was copied from our old request, so it has our magic property.  We actually
-//    // have to remove that so that, when the client starts the new request, we see it.  If we
-//    // don't do this then we never see the new request and thus don't get a chance to change
-//    // its caching behaviour.
-//    //
-//    // We also cancel our current connection because the client is going to start a new request for
-//    // us anyway.
-//
-//    //assert([[self class] propertyForKey:kOurRecursiveRequestFlagProperty inRequest:newRequest] != nil);
-//
-//    redirectRequest = [newRequest mutableCopy];
-//    [[self class] removePropertyForKey:kOurRecursiveRequestFlagProperty inRequest:redirectRequest];
-//
-//    // Tell the client about the redirect.
-//
-//    [[self client] URLProtocol:self wasRedirectedToRequest:redirectRequest redirectResponse:response];
-//
-//    // Stop our load.  The CFNetwork infrastructure will create a new NSURLProtocol instance to run
-//    // the load of the redirect.
-//
-//    // The following ends up calling -URLSession:task:didCompleteWithError: with NSURLErrorDomain / NSURLErrorCancelled,
-//    // which specificallys traps and ignores the error.
-//
-//    [self.task cancel];
-//
-//    [[self client] URLProtocol:self didFailWithError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSUserCancelledError userInfo:nil]];
-//}
-
-//liman
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task willPerformHTTPRedirection:(NSHTTPURLResponse *)response newRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURLRequest * _Nullable))completionHandler
 {
     //重定向 状态码 >=300 && < 400
@@ -825,9 +661,24 @@ static NSString * kOurRecursiveRequestFlagProperty = @"com.apple.dts.CustomHTTPP
     
     [[self client] URLProtocol:self didReceiveResponse:response cacheStoragePolicy:cacheStoragePolicy];
     
-    self.response = response;//liman
-    
     completionHandler(NSURLSessionResponseAllow);
+}
+
+- (void)URLSession:(NSURLSession *)session
+              task:(NSURLSessionTask *)task
+didFinishCollectingMetrics:(NSURLSessionTaskMetrics *)metrics API_AVAILABLE(ios(10.0))
+{
+    _HttpModel *model = [_HttpDatasource.shared cacheHttpModelForTask:task];
+    if (!model) return;
+    NSURLSessionTaskTransactionMetrics *tMetrics = metrics.transactionMetrics.lastObject;
+    model.domainStartDate = tMetrics.domainLookupStartDate;
+    model.domainEndDate = tMetrics.domainLookupEndDate;
+    model.secureStartDate = tMetrics.secureConnectionStartDate;
+    model.secureEndDate = tMetrics.secureConnectionEndDate;
+    model.requestStartDate = tMetrics.requestStartDate;
+    model.requestEndDate = tMetrics.requestEndDate;
+    model.responseStartDate = tMetrics.responseStartDate;
+    model.responseEndDate = tMetrics.responseEndDate;
 }
 
 - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveData:(NSData *)data
@@ -896,12 +747,47 @@ static NSString * kOurRecursiveRequestFlagProperty = @"com.apple.dts.CustomHTTPP
 {
     if (error) {
         [[self client] URLProtocol:self didFailWithError:error];
-        self.error = error;
     } else {
         [[self client] URLProtocolDidFinishLoading:self];
     }
+    
+    _HttpModel *model = [_HttpDatasource.shared cacheHttpModelForTask:self.task];
+    if (model) {
+        NSHTTPURLResponse* httpResponse = (NSHTTPURLResponse*)self.task.response;
+        [model setResponse:httpResponse body:self.data error:error];
+        // clean
+        [_HttpDatasource.shared cacheHttpModel:nil forTask:self.task];
+        
+        // handler
+        [_NetworkHelper.shared handleHttpWithModel:model];
+    }
 }
 
+/**
+ *  Replaces the selector's associated method implementation with the
+ *  given implementation (or adds it, if there was no existing one).
+ *
+ *  @param selector      The selector entry in the dispatch table.
+ *  @param newImpl       The implementation that will be associated with
+ *                       the given selector.
+ *  @param affectedClass The class whose dispatch table will be altered.
+ *  @param isClassMethod Set to YES if the selector denotes a class
+ *                       method, or NO if it is an instance method.
+ *  @return              The previous implementation associated with
+ *                       the swizzled selector. You should store the
+ *                       implementation and call it when overwriting
+ *                       the selector.
+ */
+IMP replaceMethod(SEL selector, IMP newImpl, Class affectedClass, BOOL isClassMethod) {
+    Method origMethod = isClassMethod ? class_getClassMethod(affectedClass, selector) : class_getInstanceMethod(affectedClass, selector);
+    IMP origImpl = method_getImplementation(origMethod);
+
+    if (!class_addMethod(isClassMethod ? object_getClass(affectedClass) : affectedClass, selector, newImpl, method_getTypeEncoding(origMethod))) {
+        method_setImplementation(origMethod, newImpl);
+    }
+
+    return origImpl;
+}
 
 #pragma mark -
 //liman
@@ -918,266 +804,4 @@ static NSString * kOurRecursiveRequestFlagProperty = @"com.apple.dts.CustomHTTPP
         });
     }
 }
-
-//处理500,404等错误
-- (_HttpModel *)handleError:(NSError *)error model:(_HttpModel *)model {
-    if (!error) {
-        //https://httpcodes.co/status/
-        switch (model.statusCode.integerValue) {
-            case 100:
-                model.errorDescription = @"Informational :\nClient should continue with request";
-                model.errorLocalizedDescription = @"Continue";
-                break;
-            case 101:
-                model.errorDescription = @"Informational :\nServer is switching protocols";
-                model.errorLocalizedDescription = @"Switching Protocols";
-                break;
-            case 102:
-                model.errorDescription = @"Informational :\nServer has received and is processing the request";
-                model.errorLocalizedDescription = @"Processing";
-                break;
-            case 103:
-                model.errorDescription = @"Informational :\nresume aborted PUT or POST requests";
-                model.errorLocalizedDescription = @"Checkpoint";
-                break;
-            case 122:
-                model.errorDescription = @"Informational :\nURI is longer than a maximum of 2083 characters";
-                model.errorLocalizedDescription = @"Request-URI too long";
-                break;
-            case 300:
-                model.errorDescription = @"Redirection :\nMultiple options for the resource delivered";
-                model.errorLocalizedDescription = @"Multiple Choices";
-                break;
-            case 301:
-                model.errorDescription = @"Redirection :\nThis and all future requests directed to the given URI";
-                model.errorLocalizedDescription = @"Moved Permanently";
-                break;
-            case 302:
-                model.errorDescription = @"Redirection :\nTemporary response to request found via alternative URI";
-                model.errorLocalizedDescription = @"Found";
-                break;
-            case 303:
-                model.errorDescription = @"Redirection :\nPermanent response to request found via alternative URI";
-                model.errorLocalizedDescription = @"See Other";
-                break;
-            case 304:
-                model.errorDescription = @"Redirection :\nResource has not been modified since last requested";
-                model.errorLocalizedDescription = @"Not Modified";
-                break;
-            case 305:
-                model.errorDescription = @"Redirection :\nContent located elsewhere, retrieve from there";
-                model.errorLocalizedDescription = @"Use Proxy";
-                break;
-            case 306:
-                model.errorDescription = @"Redirection :\nSubsequent requests should use the specified proxy";
-                model.errorLocalizedDescription = @"Switch Proxy";
-                break;
-            case 307:
-                model.errorDescription = @"Redirection :\nConnect again to different URI as provided";
-                model.errorLocalizedDescription = @"Temporary Redirect";
-                break;
-            case 308:
-                model.errorDescription = @"Redirection :\nConnect again to a different URI using the same method";
-                model.errorLocalizedDescription = @"Permanent Redirect";
-                break;
-            case 400:
-                model.errorDescription = @"Client Error :\nRequest cannot be fulfilled due to bad syntax";
-                model.errorLocalizedDescription = @"Bad Request";
-                break;
-            case 401:
-                model.errorDescription = @"Client Error :\nAuthentication is possible but has failed";
-                model.errorLocalizedDescription = @"Unauthorized";
-                break;
-            case 402:
-                model.errorDescription = @"Client Error :\nPayment required, reserved for future use";
-                model.errorLocalizedDescription = @"Payment Required";
-                break;
-            case 403:
-                model.errorDescription = @"Client Error :\nServer refuses to respond to request";
-                model.errorLocalizedDescription = @"Forbidden";
-                break;
-            case 404:
-                model.errorDescription = @"Client Error :\nRequested resource could not be found";
-                model.errorLocalizedDescription = @"Not Found";
-                break;
-            case 405:
-                model.errorDescription = @"Client Error :\nRequest method not supported by that resource";
-                model.errorLocalizedDescription = @"Method Not Allowed";
-                break;
-            case 406:
-                model.errorDescription = @"Client Error :\nContent not acceptable according to the Accept headers";
-                model.errorLocalizedDescription = @"Not Acceptable";
-                break;
-            case 407:
-                model.errorDescription = @"Client Error :\nClient must first authenticate itself with the proxy";
-                model.errorLocalizedDescription = @"Proxy Authentication Required";
-                break;
-            case 408:
-                model.errorDescription = @"Client Error :\nServer timed out waiting for the request";
-                model.errorLocalizedDescription = @"Request Timeout";
-                break;
-            case 409:
-                model.errorDescription = @"Client Error :\nRequest could not be processed because of conflict";
-                model.errorLocalizedDescription = @"Conflict";
-                break;
-            case 410:
-                model.errorDescription = @"Client Error :\nResource is no longer available and will not be available again";
-                model.errorLocalizedDescription = @"Gone";
-                break;
-            case 411:
-                model.errorDescription = @"Client Error :\nRequest did not specify the length of its content";
-                model.errorLocalizedDescription = @"Length Required";
-                break;
-            case 412:
-                model.errorDescription = @"Client Error :\nServer does not meet request preconditions";
-                model.errorLocalizedDescription = @"Precondition Failed";
-                break;
-            case 413:
-                model.errorDescription = @"Client Error :\nRequest is larger than the server is willing or able to process";
-                model.errorLocalizedDescription = @"Request Entity Too Large";
-                break;
-            case 414:
-                model.errorDescription = @"Client Error :\nURI provided was too long for the server to process";
-                model.errorLocalizedDescription = @"Request-URI Too Long";
-                break;
-            case 415:
-                model.errorDescription = @"Client Error :\nServer does not support media type";
-                model.errorLocalizedDescription = @"Unsupported Media Type";
-                break;
-            case 416:
-                model.errorDescription = @"Client Error :\nClient has asked for unprovidable portion of the file";
-                model.errorLocalizedDescription = @"Requested Range Not Satisfiable";
-                break;
-            case 417:
-                model.errorDescription = @"Client Error :\nServer cannot meet requirements of Expect request-header field";
-                model.errorLocalizedDescription = @"Expectation Failed";
-                break;
-            case 418:
-                model.errorDescription = @"Client Error :\nI'm a teapot";
-                model.errorLocalizedDescription = @"I'm a Teapot";
-                break;
-            case 420:
-                model.errorDescription = @"Client Error :\nTwitter rate limiting";
-                model.errorLocalizedDescription = @"Enhance Your Calm";
-                break;
-            case 421:
-                model.errorDescription = @"Client Error :\nMisdirected Request";
-                model.errorLocalizedDescription = @"Misdirected Request";
-                break;
-            case 422:
-                model.errorDescription = @"Client Error :\nRequest unable to be followed due to semantic errors";
-                model.errorLocalizedDescription = @"Unprocessable Entity";
-                break;
-            case 423:
-                model.errorDescription = @"Client Error :\nResource that is being accessed is locked";
-                model.errorLocalizedDescription = @"Locked";
-                break;
-            case 424:
-                model.errorDescription = @"Client Error :\nRequest failed due to failure of a previous request";
-                model.errorLocalizedDescription = @"Failed Dependency";
-                break;
-            case 426:
-                model.errorDescription = @"Client Error :\nClient should switch to a different protocol";
-                model.errorLocalizedDescription = @"Upgrade Required";
-                break;
-            case 428:
-                model.errorDescription = @"Client Error :\nOrigin server requires the request to be conditional";
-                model.errorLocalizedDescription = @"Precondition Required";
-                break;
-            case 429:
-                model.errorDescription = @"Client Error :\nUser has sent too many requests in a given amount of time";
-                model.errorLocalizedDescription = @"Too Many Requests";
-                break;
-            case 431:
-                model.errorDescription = @"Client Error :\nServer is unwilling to process the request";
-                model.errorLocalizedDescription = @"Request Header Fields Too Large";
-                break;
-            case 444:
-                model.errorDescription = @"Client Error :\nServer returns no information and closes the connection";
-                model.errorLocalizedDescription = @"No Response";
-                break;
-            case 449:
-                model.errorDescription = @"Client Error :\nRequest should be retried after performing action";
-                model.errorLocalizedDescription = @"Retry With";
-                break;
-            case 450:
-                model.errorDescription = @"Client Error :\nWindows Parental Controls blocking access to webpage";
-                model.errorLocalizedDescription = @"Blocked by Windows Parental Controls";
-                break;
-            case 451:
-                model.errorDescription = @"Client Error :\nThe server cannot reach the client's mailbox";
-                model.errorLocalizedDescription = @"Wrong Exchange server";
-                break;
-            case 499:
-                model.errorDescription = @"Client Error :\nConnection closed by client while HTTP server is processing";
-                model.errorLocalizedDescription = @"Client Closed Request";
-                break;
-            case 500:
-                model.errorDescription = @"Server Error :\ngeneric error message";
-                model.errorLocalizedDescription = @"Internal Server Error";
-                break;
-            case 501:
-                model.errorDescription = @"Server Error :\nserver does not recognise method or lacks ability to fulfill";
-                model.errorLocalizedDescription = @"Not Implemented";
-                break;
-            case 502:
-                model.errorDescription = @"Server Error :\nserver received an invalid response from upstream server";
-                model.errorLocalizedDescription = @"Bad Gateway";
-                break;
-            case 503:
-                model.errorDescription = @"Server Error :\nserver is currently unavailable";
-                model.errorLocalizedDescription = @"Service Unavailable";
-                break;
-            case 504:
-                model.errorDescription = @"Server Error :\ngateway did not receive response from upstream server";
-                model.errorLocalizedDescription = @"Gateway Timeout";
-                break;
-            case 505:
-                model.errorDescription = @"Server Error :\nserver does not support the HTTP protocol version";
-                model.errorLocalizedDescription = @"HTTP Version Not Supported";
-                break;
-            case 506:
-                model.errorDescription = @"Server Error :\ncontent negotiation for the request results in a circular reference";
-                model.errorLocalizedDescription = @"Variant Also Negotiates";
-                break;
-            case 507:
-                model.errorDescription = @"Server Error :\nserver is unable to store the representation";
-                model.errorLocalizedDescription = @"Insufficient Storage";
-                break;
-            case 508:
-                model.errorDescription = @"Server Error :\nserver detected an infinite loop while processing the request";
-                model.errorLocalizedDescription = @"Loop Detected";
-                break;
-            case 509:
-                model.errorDescription = @"Server Error :\nbandwidth limit exceeded";
-                model.errorLocalizedDescription = @"Bandwidth Limit Exceeded";
-                break;
-            case 510:
-                model.errorDescription = @"Server Error :\nfurther extensions to the request are required";
-                model.errorLocalizedDescription = @"Not Extended";
-                break;
-            case 511:
-                model.errorDescription = @"Server Error :\nclient needs to authenticate to gain network access";
-                model.errorLocalizedDescription = @"Network Authentication Required";
-                break;
-            case 526:
-                model.errorDescription = @"Server Error :\nThe origin web server does not have a valid SSL certificate";
-                model.errorLocalizedDescription = @"Invalid SSL certificate";
-                break;
-            case 598:
-                model.errorDescription = @"Server Error :\nnetwork read timeout behind the proxy";
-                model.errorLocalizedDescription = @"Network Read Timeout Error";
-                break;
-            case 599:
-                model.errorDescription = @"Server Error :\nnetwork connect timeout behind the proxy";
-                model.errorLocalizedDescription = @"Network Connect Timeout Error";
-                break;
-            default:
-                break;
-        }
-    }
-    
-    return model;
-}
-
 @end

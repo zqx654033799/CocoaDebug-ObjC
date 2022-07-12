@@ -8,7 +8,6 @@
 #import "AppInfoViewController.h"
 #import "AppInfoTableViewCell.h"
 #import "AppInfoModel.h"
-#import "NSObject+CocoaDebug.h"
 #import "CrashListViewController.h"
 #import "_CrashStoreManager.h"
 #import "CocoaDebugBackBarButtonItem.h"
@@ -40,8 +39,15 @@ static NSString * const _CellReuseIdentifier = @"_AppInfoTableViewCellReuseIdent
     
     self.navigationItem.backBarButtonItem = [CocoaDebugBackBarButtonItem backBarButtonItem];
     
+    self.tableView.estimatedRowHeight = 44;
     self.tableView.separatorColor = [UIColor colorFromHexString:@"#4D4D4D"];
     [self.tableView registerClass:AppInfoTableViewCell.class forCellReuseIdentifier:_CellReuseIdentifier];
+#ifdef __IPHONE_15_0
+    if (@available(iOS 15.0, *)) {
+        // iOS15 导航栏和表格视图之间 的空隙
+        self.tableView.sectionHeaderTopPadding = 0.0f;
+    }
+#endif
     
     self.dataSource = [AppInfoModel infos];
     
@@ -56,12 +62,9 @@ static NSString * const _CellReuseIdentifier = @"_AppInfoTableViewCellReuseIdent
 
 - (void)showAlert {
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:nil message:@"You must restart APP to ensure the changes take effect" preferredStyle:UIAlertControllerStyleAlert];
-    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Restart later" style:UIAlertActionStyleCancel handler:NULL];
-    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"Restart now" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+    [alert addAction:[UIAlertAction actionWithTitle:@"Restart now" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
         exit(0);
-    }];
-    [alert addAction:cancelAction];
-    [alert addAction:okAction];
+    }]];
     [self presentViewController:alert animated:YES completion:NULL];
 }
 
@@ -80,6 +83,7 @@ static NSString * const _CellReuseIdentifier = @"_AppInfoTableViewCellReuseIdent
 
 - (void)tableView:(UITableView *)tableView willDisplayHeaderView:(UIView *)view forSection:(NSInteger)section {
     UITableViewHeaderFooterView *header = (UITableViewHeaderFooterView *)view;
+    header.textLabel.textColor = UIColor.darkGrayColor;
     header.textLabel.text = [self tableView:tableView titleForHeaderInSection:section];
 }
 
@@ -91,6 +95,7 @@ static NSString * const _CellReuseIdentifier = @"_AppInfoTableViewCellReuseIdent
     } else {
         cell.rightLable.textColor = UIColor.whiteColor;
     }
+    [cell layoutIfNeeded];
     return cell;
 }
 

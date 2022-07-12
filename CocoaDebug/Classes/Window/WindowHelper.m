@@ -11,11 +11,50 @@
 #import "_DebugCpuMonitor.h"
 #import "_DebugFPSMonitor.h"
 #import "_DebugMemoryMonitor.h"
+#import <objc/runtime.h>
+
+@implementation UIWindow (Extensions)
+
+- (BOOL)computedProperty {
+    return [objc_getAssociatedObject(self, @selector(computedProperty)) boolValue];
+}
+- (void)setComputedProperty:(BOOL)value {
+    objc_setAssociatedObject(self, @selector(computedProperty), @(value), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (void)motionBegan:(UIEventSubtype)motion withEvent:(UIEvent *)event {
+    [super motionBegan:motion withEvent:event];
+    
+    [self setComputedProperty:YES];
+    
+    if (!CocoaDebugSettings.shared.responseShake) { return; }
+    if (motion == UIEventSubtypeMotionShake) {
+        if (CocoaDebugSettings.shared.visible) { return; }
+        CocoaDebugSettings.shared.showBubbleAndWindow = !CocoaDebugSettings.shared.showBubbleAndWindow;
+    }
+}
+
+- (void)motionEnded:(UIEventSubtype)motion withEvent:(UIEvent *)event {
+    [super motionEnded:motion withEvent:event];
+
+    if ([self computedProperty]) {
+        [self setComputedProperty:NO];
+        return;
+    }
+    
+    if (!CocoaDebugSettings.shared.responseShake) { return; }
+    if (motion == UIEventSubtypeMotionShake) {
+        if (CocoaDebugSettings.shared.visible) { return; }
+        CocoaDebugSettings.shared.showBubbleAndWindow = !CocoaDebugSettings.shared.showBubbleAndWindow;
+    }
+}
+@end
 
 @interface WindowHelper ()<WindowDelegate>
 @property (strong, nonatomic) CocoaDebugWindow *window;
-
 @property (strong, nonatomic) CocoaDebugViewController *vc;
+
+@property (assign, nonatomic) BOOL running;
 @end
 
 @implementation WindowHelper
@@ -37,8 +76,9 @@
         _window = [[CocoaDebugWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
         CGRect windowBounds = self.window.bounds;
         // This is for making the window not to effect the StatusBarStyle
-        windowBounds.size.height = UIScreen.mainScreen.bounds.size.height - DBL_EPSILON;
+        windowBounds.size.height = UIScreen.mainScreen.bounds.size.height - 0.001;
         _window.bounds = windowBounds;
+        _window.rootViewController = self.vc;
     }
     return self;
 }
@@ -59,11 +99,12 @@
 
 - (void)enable
 {
-    if (!self.window.rootViewController) {
-        self.window.rootViewController = self.vc;
-        self.window.delegate = self;
-        self.window.hidden = NO;
-        
+    self.window.delegate = self;
+    self.window.hidden = NO;
+    self.vc.visable = YES;
+    
+    if (!self.running) {
+        self.running = YES;
         [_DebugMemoryMonitor.sharedInstance startMonitoring];
         [_DebugCpuMonitor.sharedInstance startMonitoring];
         [_DebugFPSMonitor.sharedInstance startMonitoring];
@@ -90,11 +131,12 @@
 
 - (void)disable
 {
-    if (self.window.rootViewController) {
-        self.window.rootViewController = nil;
-        self.window.delegate = nil;
-        self.window.hidden = YES;
-        
+    self.window.delegate = nil;
+    self.window.hidden = NO;
+    self.vc.visable = NO;
+
+    if (self.running) {
+        self.running = NO;
         [_DebugMemoryMonitor.sharedInstance stopMonitoring];
         [_DebugCpuMonitor.sharedInstance stopMonitoring];
         [_DebugFPSMonitor.sharedInstance stopMonitoring];

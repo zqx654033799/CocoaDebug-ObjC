@@ -10,13 +10,11 @@
 #import "_OCLogModel.h"
 
 FOUNDATION_EXTERN NSNotificationName const LogDefaultChangedNotification;
-FOUNDATION_EXTERN NSNotificationName const LogColorChangedNotification;
 FOUNDATION_EXTERN NSNotificationName const LogH5ChangedNotification;
 
 @interface _OCLogStoreManager : NSObject
 
 @property (nonatomic, strong) NSMutableArray<_OCLogModel *> *defaultLogArray;
-@property (nonatomic, strong) NSMutableArray<_OCLogModel *> *colorLogArray;
 @property (nonatomic, strong) NSMutableArray<_OCLogModel *> *h5LogArray;
 
 + (instancetype)shared;
@@ -25,8 +23,9 @@ FOUNDATION_EXTERN NSNotificationName const LogH5ChangedNotification;
 - (void)removeLog:(_OCLogModel *)log;
 
 - (void)resetDefaultLogs;
-- (void)resetColorLogs;
 - (void)resetH5Logs;
+
+- (void)reset;
 
 @end
 

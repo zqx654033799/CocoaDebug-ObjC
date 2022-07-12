@@ -6,14 +6,12 @@
 //
 
 #import "CocoaDebugTabBarController.h"
-#import "CocoaDebugSettings.h"
 #import "WindowHelper.h"
 #import "CocoaDebugNavigationController.h"
 #import "NetworkViewController.h"
 #import "LogViewController.h"
 #import "_Sandboxer.h"
 #import "AppInfoViewController.h"
-#import "CocoaDebug+Extensions.h"
 
 @interface CocoaDebugTabBarController ()<UITabBarDelegate>
 
@@ -25,12 +23,23 @@
     [super viewDidLoad];
     
     [UIApplication.sharedApplication.keyWindow endEditing:YES];
+    self.tabBar.translucent = NO;
     
     [self setChildControllers];
     
     self.selectedIndex = CocoaDebugSettings.shared.tabBarSelectItem;
     self.tabBar.barTintColor = UIColor.blackColor;
     self.tabBar.tintColor = UIColor.mainGreen;
+    
+#ifdef __IPHONE_15_0
+    if (@available(iOS 15.0, *)) {
+        UITabBarAppearance *appearance = [UITabBarAppearance new];
+        [appearance configureWithOpaqueBackground];
+        appearance.backgroundColor = self.tabBar.barTintColor;
+        self.tabBar.scrollEdgeAppearance = appearance;
+        self.tabBar.standardAppearance = appearance;
+    }
+#endif
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -61,11 +70,6 @@
     UINavigationController *app = [[CocoaDebugNavigationController alloc] initWithRootViewController:AppInfoViewController.new];
     
     //2.
-    _Sandboxer.shared.systemFilesHidden = NO;
-    _Sandboxer.shared.extensionHidden = NO;
-    _Sandboxer.shared.shareable = YES;
-    _Sandboxer.shared.fileDeletable = YES;
-    _Sandboxer.shared.directoryDeletable = YES;
     network.title = @"Network";
     network.tabBarItem.image = [UIImage imageNamed:@"_icon_file_type_network" inBundle:[NSBundle bundleForClass:self.class] compatibleWithTraitCollection:nil];
     logs.title = @"Logs";

@@ -6,8 +6,6 @@
 //
 
 #import "_CrashStoreManager.h"
-#import "CocoaDebug+Extensions.h"
-#import "CocoaDebugSettings.h"
 
 NSNotificationName const CrashArrayChangedNotification = @"_CrashArrayChangedNotification";
 
@@ -29,7 +27,7 @@ NSNotificationName const CrashArrayChangedNotification = @"_CrashArrayChangedNot
 {
     self = [super init];
     if (self) {
-        self.crashArray = [NSMutableArray arrayWithCapacity:CocoaDebug.logMaxCount];
+        self.crashArray = [NSMutableArray arrayWithCapacity:_logMaxCount];
         NSArray *cacheArray = CocoaDebugSettings.shared.crashList;
         if (cacheArray) {
             [self.crashArray addObjectsFromArray:cacheArray];
@@ -42,7 +40,7 @@ NSNotificationName const CrashArrayChangedNotification = @"_CrashArrayChangedNot
 {
     BOOL changed = NO;
     //最大个数限制
-    if (self.crashArray.count >= CocoaDebug.logMaxCount) {
+    if (self.crashArray.count >= _logMaxCount) {
         if ([self.crashArray count] > 0) {
             [self.crashArray removeObjectAtIndex:0];
             changed = YES;
